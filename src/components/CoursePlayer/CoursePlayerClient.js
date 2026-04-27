@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
-import styles from "./CoursePlayer.module.scss";
+
 
 export default function CoursePlayerClient({
     course, sections, lessonId, enrollment, progress, userId
@@ -44,17 +44,17 @@ export default function CoursePlayerClient({
     };
 
     return (
-        <div className={styles.page}>
+        <div className={"CoursePlayer-page"}>
             {/* Top bar */}
-            <div className={styles.topbar}>
-                <button className={styles.backBtn} onClick={() => router.push("/dashboard")}>
+            <div className={"CoursePlayer-topbar"}>
+                <button className={"CoursePlayer-backBtn"} onClick={() => router.push("/dashboard")}>
                     ← الداشبورد
                 </button>
-                <div className={styles.topbarTitle}>{course.title}</div>
-                <div className={styles.topbarProgress}>
-                    <div className={styles.progressTrack}>
+                <div className={"CoursePlayer-topbarTitle"}>{course.title}</div>
+                <div className={"CoursePlayer-topbarProgress"}>
+                    <div className={"CoursePlayer-progressTrack"}>
                         <div
-                            className={styles.progressFill}
+                            className={"CoursePlayer-progressFill"}
                             style={{ width: `${enrollment.progress}%` }}
                         />
                     </div>
@@ -62,43 +62,43 @@ export default function CoursePlayerClient({
                 </div>
             </div>
 
-            <div className={styles.layout}>
+            <div className={"CoursePlayer-layout"}>
                 {/* Video area */}
-                <div className={styles.videoArea}>
+                <div className={"CoursePlayer-videoArea"}>
                     {/* Video placeholder */}
-                    <div className={styles.videoPlayer}>
+                    <div className={"CoursePlayer-videoPlayer"}>
                         {currentLesson?.video_url ? (
                             <iframe
                                 src={currentLesson.video_url}
                                 allowFullScreen
-                                className={styles.iframe}
+                                className={"CoursePlayer-iframe"}
                             />
                         ) : (
-                            <div className={styles.videoPlaceholder}>
-                                <div className={styles.playIcon}>▶</div>
+                            <div className={"CoursePlayer-videoPlaceholder"}>
+                                <div className={"CoursePlayer-playIcon"}>▶</div>
                                 <div>{currentLesson?.title ?? "اختر درساً"}</div>
                             </div>
                         )}
                     </div>
 
                     {/* Lesson info */}
-                    <div className={styles.lessonInfo}>
-                        <h2 className={styles.lessonTitle}>{currentLesson?.title}</h2>
-                        <div className={styles.lessonActions}>
-                            <div className={styles.navBtns}>
+                    <div className={"CoursePlayer-lessonInfo"}>
+                        <h2 className={"CoursePlayer-lessonTitle"}>{currentLesson?.title}</h2>
+                        <div className={"CoursePlayer-lessonActions"}>
+                            <div className={"CoursePlayer-navBtns"}>
                                 <button
-                                    className={styles.navBtn}
+                                    className={"CoursePlayer-navBtn"}
                                     onClick={() => prevLesson && goToLesson(prevLesson)}
                                     disabled={!prevLesson}
                                 >← السابق</button>
                                 <button
-                                    className={styles.navBtn}
+                                    className={"CoursePlayer-navBtn"}
                                     onClick={() => nextLesson && goToLesson(nextLesson)}
                                     disabled={!nextLesson}
                                 >التالي ←</button>
                             </div>
                             <button
-                                className={`${styles.completeBtn} ${completed.has(currentLesson?.id) ? styles.completedBtn : ""}`}
+                                className={`${"CoursePlayer-completeBtn"} ${completed.has(currentLesson?.id) ? "CoursePlayer-completedBtn" : ""}`}
                                 onClick={markComplete}
                                 disabled={completed.has(currentLesson?.id)}
                             >
@@ -109,36 +109,36 @@ export default function CoursePlayerClient({
                 </div>
 
                 {/* Sidebar */}
-                <div className={`${styles.sidebar} ${!sidebarOpen ? styles.sidebarHidden : ""}`}>
-                    <div className={styles.sidebarHead}>
+                <div className={`${"CoursePlayer-sidebar"} ${!sidebarOpen ? "CoursePlayer-sidebarHidden" : ""}`}>
+                    <div className={"CoursePlayer-sidebarHead"}>
                         <span>محتوى الكورس</span>
-                        <button onClick={() => setSidebarOpen(!sidebarOpen)} className={styles.toggleBtn}>
+                        <button onClick={() => setSidebarOpen(!sidebarOpen)} className={"CoursePlayer-toggleBtn"}>
                             {sidebarOpen ? "◀" : "▶"}
                         </button>
                     </div>
 
-                    <div className={styles.sectionsList}>
+                    <div className={"CoursePlayer-sectionsList"}>
                         {sections.map(sec => (
-                            <div key={sec.id} className={styles.section}>
-                                <div className={styles.sectionTitle}>{sec.title}</div>
+                            <div key={sec.id} className={"CoursePlayer-section"}>
+                                <div className={"CoursePlayer-sectionTitle"}>{sec.title}</div>
                                 {sec.lessons?.map(lesson => (
                                     <div
                                         key={lesson.id}
-                                        className={`${styles.lessonRow} ${lesson.id === currentLesson?.id ? styles.lessonActive : ""} ${completed.has(lesson.id) ? styles.lessonDone : ""}`}
+                                        className={`${"CoursePlayer-lessonRow"} ${lesson.id === currentLesson?.id ? "CoursePlayer-lessonActive" : ""} ${completed.has(lesson.id) ? "CoursePlayer-lessonDone" : ""}`}
                                         onClick={() => goToLesson(lesson)}
                                     >
-                                        <span className={styles.lessonCheck}>
+                                        <span className={"CoursePlayer-lessonCheck"}>
                                             {completed.has(lesson.id) ? "✅" : "○"}
                                         </span>
-                                        <span className={styles.lessonName}>{lesson.title}</span>
-                                        <span className={styles.lessonDur}>{lesson.duration}</span>
+                                        <span className={"CoursePlayer-lessonName"}>{lesson.title}</span>
+                                        <span className={"CoursePlayer-lessonDur"}>{lesson.duration}</span>
                                     </div>
                                 ))}
                             </div>
                         ))}
 
                         {sections.length === 0 && (
-                            <div className={styles.emptyLessons}>
+                            <div className={"CoursePlayer-emptyLessons"}>
                                 المحتوى قيد الإضافة...
                             </div>
                         )}

@@ -2,7 +2,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
-import styles from "./InstructorDashboard.module.scss";
+import AddLessonModal from "./AddLessonModal";
+import CouponsManager from "./CouponsManager";
 
 const STATUS_LABELS = {
     live: { label: "منشور", color: "#10B981", bg: "rgba(16,185,129,.12)" },
@@ -15,7 +16,10 @@ export default function InstructorDashboardClient({
 }) {
     const router = useRouter();
     const supabase = createClient();
+
     const [activeTab, setActiveTab] = useState("overview");
+    const [showAddLesson, setShowAddLesson] = useState(false);
+    const [selectedCourse, setSelectedCourse] = useState(null);
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -27,23 +31,23 @@ export default function InstructorDashboardClient({
         : 0;
 
     return (
-        <div className={styles.page}>
+        <div className={"InstructorDashboard-page"}>
             {/* Sidebar */}
-            <div className={styles.sidebar}>
-                <div className={styles.logo} onClick={() => router.push("/")}>
-                    <div className={styles.logoIcon}>E</div>
-                    <span className={styles.logoName}>Edu<span>Platform</span></span>
+            <div className={"InstructorDashboard-sidebar"}>
+                <div className={"InstructorDashboard-logo"} onClick={() => router.push("/")}>
+                    <div className={"InstructorDashboard-logoIcon"}>E</div>
+                    <span className={"InstructorDashboard-logoName"}>Edu<span>Platform</span></span>
                 </div>
 
-                <div className={styles.profile}>
-                    <div className={styles.profileAvatar}>{profile?.name?.[0] ?? "م"}</div>
+                <div className={"InstructorDashboard-profile"}>
+                    <div className={"InstructorDashboard-profileAvatar"}>{profile?.name?.[0] ?? "م"}</div>
                     <div>
-                        <div className={styles.profileName}>{profile?.name}</div>
-                        <div className={styles.profileRole}>مدرس</div>
+                        <div className={"InstructorDashboard-profileName"}>{profile?.name}</div>
+                        <div className={"InstructorDashboard-profileRole"}>مدرس</div>
                     </div>
                 </div>
 
-                <nav className={styles.nav}>
+                <nav className={"InstructorDashboard-nav"}>
                     {[
                         { id: "overview", label: "الداشبورد", icon: "⊞" },
                         { id: "courses", label: "كورساتي", icon: "📚" },
@@ -51,37 +55,45 @@ export default function InstructorDashboardClient({
                     ].map(item => (
                         <div
                             key={item.id}
-                            className={`${styles.navItem} ${activeTab === item.id ? styles.navActive : ""}`}
+                            className={`${"InstructorDashboard-navItem"} ${activeTab === item.id ? "InstructorDashboard-navActive" : ""}`}
                             onClick={() => setActiveTab(item.id)}
                         >
                             <span>{item.icon}</span>
                             {item.label}
                         </div>
                     ))}
-                    <div className={styles.navItem} onClick={() => router.push("/instructor/courses/create")}>
+                    <div
+                        className={"InstructorDashboard-navItem"}
+                        onClick={() => router.push("/instructor/courses/create")}
+                    >
                         <span>➕</span> إنشاء كورس
                     </div>
                 </nav>
 
-                <div className={styles.sidebarFooter}>
-                    <div className={styles.navItem} onClick={() => router.push("/dashboard")}>
+                <div className={"InstructorDashboard-sidebarFooter"}>
+                    <div
+                        className={"InstructorDashboard-navItem"}
+                        onClick={() => router.push("/dashboard")}
+                    >
                         ↔ عرض كطالب
                     </div>
-                    <button className={styles.logoutBtn} onClick={handleLogout}>
+                    <button className={"InstructorDashboard-logoutBtn"} onClick={handleLogout}>
                         تسجيل الخروج
                     </button>
                 </div>
             </div>
 
             {/* Main */}
-            <main className={styles.main}>
-                <div className={styles.topbar}>
+            <main className={"InstructorDashboard-main"}>
+                <div className={"InstructorDashboard-topbar"}>
                     <div>
-                        <h1 className={styles.pageTitle}>مرحباً، {profile?.name?.split(" ")[0]} 👨‍🏫</h1>
-                        <p className={styles.pageSub}>لوحة تحكم المدرس</p>
+                        <h1 className={"InstructorDashboard-pageTitle"}>
+                            مرحباً، {profile?.name?.split(" ")[0]} 👨‍🏫
+                        </h1>
+                        <p className={"InstructorDashboard-pageSub"}>لوحة تحكم المدرس</p>
                     </div>
                     <button
-                        className={styles.createBtn}
+                        className={"InstructorDashboard-createBtn"}
                         onClick={() => router.push("/instructor/courses/create")}
                     >
                         + إنشاء كورس
@@ -89,23 +101,23 @@ export default function InstructorDashboardClient({
                 </div>
 
                 {/* KPIs */}
-                <div className={styles.kpiGrid}>
+                <div className={"InstructorDashboard-kpiGrid"}>
                     {[
                         { icon: "👥", label: "إجمالي الطلاب", val: totalStudents, color: "#818CF8" },
                         { icon: "💰", label: "الإيرادات (ج.م)", val: totalRevenue.toLocaleString(), color: "#10B981" },
                         { icon: "⭐", label: "متوسط التقييم", val: avgRating, color: "#FBBF24" },
                         { icon: "📚", label: "الكورسات", val: courses.length, color: "#EC4899" },
                     ].map(k => (
-                        <div key={k.label} className={styles.kpiCard}>
-                            <div className={styles.kpiIcon}>{k.icon}</div>
-                            <div className={styles.kpiVal} style={{ color: k.color }}>{k.val}</div>
-                            <div className={styles.kpiLbl}>{k.label}</div>
+                        <div key={k.label} className={"InstructorDashboard-kpiCard"}>
+                            <div className={"InstructorDashboard-kpiIcon"}>{k.icon}</div>
+                            <div className={"InstructorDashboard-kpiVal"} style={{ color: k.color }}>{k.val}</div>
+                            <div className={"InstructorDashboard-kpiLbl"}>{k.label}</div>
                         </div>
                     ))}
                 </div>
 
                 {/* Tabs */}
-                <div className={styles.tabs}>
+                <div className={"InstructorDashboard-tabs"}>
                     {[
                         { id: "overview", label: "نظرة عامة" },
                         { id: "courses", label: "كورساتي" },
@@ -113,7 +125,7 @@ export default function InstructorDashboardClient({
                     ].map(t => (
                         <button
                             key={t.id}
-                            className={`${styles.tab} ${activeTab === t.id ? styles.tabActive : ""}`}
+                            className={`${"InstructorDashboard-tab"} ${activeTab === t.id ? "InstructorDashboard-tabActive" : ""}`}
                             onClick={() => setActiveTab(t.id)}
                         >{t.label}</button>
                     ))}
@@ -121,32 +133,36 @@ export default function InstructorDashboardClient({
 
                 {/* Tab: Overview */}
                 {activeTab === "overview" && (
-                    <div className={styles.coursesList}>
+                    <div className={"InstructorDashboard-coursesList"}>
                         {courses.slice(0, 3).map(c => {
                             const s = STATUS_LABELS[c.status] ?? STATUS_LABELS.draft;
                             return (
-                                <div key={c.id} className={styles.courseRow}>
-                                    <img src={c.thumbnail} alt={c.title} className={styles.courseThumb} />
-                                    <div className={styles.courseInfo}>
-                                        <div className={styles.courseTitle}>{c.title}</div>
-                                        <div className={styles.courseMeta}>
+                                <div key={c.id} className={"InstructorDashboard-courseRow"}>
+                                    {c.thumbnail && (
+                                        <img src={c.thumbnail} alt={c.title} className={"InstructorDashboard-courseThumb"} />
+                                    )}
+                                    <div className={"InstructorDashboard-courseInfo"}>
+                                        <div className={"InstructorDashboard-courseTitle"}>{c.title}</div>
+                                        <div className={"InstructorDashboard-courseMeta"}>
                                             {c.enrollments?.[0]?.count ?? 0} طالب · ★ {c.rating}
                                         </div>
                                     </div>
-                                    <span className={styles.statusBadge} style={{ color: s.color, background: s.bg }}>
-                                        {s.label}
-                                    </span>
-                                    <div className={styles.courseRevenue}>{c.price} ج.م</div>
+                                    <span
+                                        className={"InstructorDashboard-statusBadge"}
+                                        style={{ color: s.color, background: s.bg }}
+                                    >{s.label}</span>
+                                    <div className={"InstructorDashboard-courseRevenue"}>{c.price} ج.م</div>
                                 </div>
                             );
                         })}
                         {courses.length === 0 && (
-                            <div className={styles.empty}>
+                            <div className={"InstructorDashboard-empty"}>
                                 <div>📚</div>
                                 <p>لم تنشئ أي كورس بعد</p>
-                                <button className={styles.createBtn} onClick={() => router.push("/instructor/courses/create")}>
-                                    إنشاء أول كورس
-                                </button>
+                                <button
+                                    className={"InstructorDashboard-createBtn"}
+                                    onClick={() => router.push("/instructor/courses/create")}
+                                >إنشاء أول كورس</button>
                             </div>
                         )}
                     </div>
@@ -154,51 +170,65 @@ export default function InstructorDashboardClient({
 
                 {/* Tab: Courses */}
                 {activeTab === "courses" && (
-                    <div className={styles.coursesList}>
+                    <div className={"InstructorDashboard-coursesList"}>
                         {courses.map(c => {
                             const s = STATUS_LABELS[c.status] ?? STATUS_LABELS.draft;
                             return (
-                                <div key={c.id} className={styles.courseRow}>
-                                    <img src={c.thumbnail} alt={c.title} className={styles.courseThumb} />
-                                    <div className={styles.courseInfo}>
-                                        <div className={styles.courseTitle}>{c.title}</div>
-                                        <div className={styles.courseMeta}>
+                                <div key={c.id} className={"InstructorDashboard-courseRow"}>
+                                    {c.thumbnail && (
+                                        <img src={c.thumbnail} alt={c.title} className={"InstructorDashboard-courseThumb"} />
+                                    )}
+                                    <div className={"InstructorDashboard-courseInfo"}>
+                                        <div className={"InstructorDashboard-courseTitle"}>{c.title}</div>
+                                        <div className={"InstructorDashboard-courseMeta"}>
                                             {c.enrollments?.[0]?.count ?? 0} طالب · ★ {c.rating} · {c.price} ج.م
                                         </div>
                                     </div>
-                                    <span className={styles.statusBadge} style={{ color: s.color, background: s.bg }}>
-                                        {s.label}
-                                    </span>
+                                    <span
+                                        className={"InstructorDashboard-statusBadge"}
+                                        style={{ color: s.color, background: s.bg }}
+                                    >{s.label}</span>
+                                    <button
+                                        className={"InstructorDashboard-addLessonBtn"}
+                                        onClick={() => {
+                                            setSelectedCourse(c.id);
+                                            setShowAddLesson(true);
+                                        }}
+                                    >+ إضافة درس</button>
                                 </div>
                             );
                         })}
                         {courses.length === 0 && (
-                            <div className={styles.empty}>
+                            <div className={"InstructorDashboard-empty"}>
                                 <div>📚</div>
                                 <p>لم تنشئ أي كورس بعد</p>
                             </div>
                         )}
                     </div>
-                )}
 
+                )}
+                <CouponsManager courses={courses} />
                 {/* Tab: Earnings */}
                 {activeTab === "earnings" && (
-                    <div className={styles.coursesList}>
+                    <div className={"InstructorDashboard-coursesList"}>
                         {transactions.length === 0 ? (
-                            <div className={styles.empty}>
+                            <div className={"InstructorDashboard-empty"}>
                                 <div>💰</div>
                                 <p>لا توجد معاملات بعد</p>
                             </div>
                         ) : (
                             transactions.map(t => (
-                                <div key={t.id} className={styles.txRow}>
-                                    <div className={styles.txType}>
+                                <div key={t.id} className={"InstructorDashboard-txRow"}>
+                                    <div className={"InstructorDashboard-txType"}>
                                         {t.type === "purchase" ? "💰 شراء" : "📤 سحب"}
                                     </div>
-                                    <div className={styles.txAmount} style={{ color: t.amount > 0 ? "#10B981" : "#818CF8" }}>
+                                    <div
+                                        className={"InstructorDashboard-txAmount"}
+                                        style={{ color: t.amount > 0 ? "#10B981" : "#818CF8" }}
+                                    >
                                         {t.amount > 0 ? "+" : ""}{t.amount} ج.م
                                     </div>
-                                    <div className={styles.txDate}>
+                                    <div className={"InstructorDashboard-txDate"}>
                                         {new Date(t.created_at).toLocaleDateString("ar-EG")}
                                     </div>
                                 </div>
@@ -207,6 +237,15 @@ export default function InstructorDashboardClient({
                     </div>
                 )}
             </main>
+
+            {/* Add Lesson Modal */}
+            {showAddLesson && selectedCourse && (
+                <AddLessonModal
+                    courseId={selectedCourse}
+                    onClose={() => setShowAddLesson(false)}
+                    onSuccess={() => router.refresh()}
+                />
+            )}
         </div>
     );
 }

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import styles from "./auth.module.scss";
+
 
 export default function LoginPage() {
     const router = useRouter();
@@ -33,18 +33,18 @@ export default function LoginPage() {
     };
 
     return (
-        <div className={styles.page}>
+        <div className={"auth-page"}>
             {/* Left — Form */}
-            <div className={styles.formSide}>
+            <div className={"auth-formSide"}>
 
-                <div className={styles.card}>
-                    <h2 className={styles.title}>أهلاً بعودتك 👋</h2>
-                    <p className={styles.subtitle}>سجّل دخولك وتابع رحلتك التعليمية</p>
+                <div className={"auth-card"}>
+                    <h2 className={"auth-title"}>أهلاً بعودتك 👋</h2>
+                    <p className={"auth-subtitle"}>سجّل دخولك وتابع رحلتك التعليمية</p>
 
-                    <div className={styles.field}>
+                    <div className={"auth-field"}>
                         <label>البريد الإلكتروني</label>
                         <input
-                            className={styles.input}
+                            className={"auth-input"}
                             type="email"
                             placeholder="example@email.com"
                             value={form.email}
@@ -52,10 +52,10 @@ export default function LoginPage() {
                         />
                     </div>
 
-                    <div className={styles.field}>
+                    <div className={"auth-field"}>
                         <label>كلمة المرور</label>
                         <input
-                            className={styles.input}
+                            className={"auth-input"}
                             type="password"
                             placeholder="••••••••"
                             value={form.password}
@@ -63,10 +63,10 @@ export default function LoginPage() {
                         />
                     </div>
 
-                    {error && <div className={styles.error}>{error}</div>}
+                    {error && <div className={"auth-error"}>{error}</div>}
 
                     <button
-                        className={styles.submitBtn}
+                        className={"auth-submitBtn"}
                         onClick={handleSubmit}
                         disabled={loading}
                     >
@@ -83,21 +83,21 @@ export default function LoginPage() {
             </div>
 
             {/* Right — Visual */}
-            <div className={styles.visualSide}>
-                <div className={styles.visualContent}>
-                    <div className={styles.bigIcon}>🎓</div>
-                    <h2 className={styles.visualTitle}>منصة التعلم العربية الأولى</h2>
-                    <p className={styles.visualText}>تعلّم من أفضل الخبراء واحصل على شهادات معتمدة</p>
-                    <div className={styles.stats}>
-                        <div className={styles.stat}>
+            <div className={"auth-visualSide"}>
+                <div className={"auth-visualContent"}>
+                    <div className={"auth-bigIcon"}>🎓</div>
+                    <h2 className={"auth-visualTitle"}>منصة التعلم العربية الأولى</h2>
+                    <p className={"auth-visualText"}>تعلّم من أفضل الخبراء واحصل على شهادات معتمدة</p>
+                    <div className={"auth-stats"}>
+                        <div className={"auth-stat"}>
                             <strong>52,840+</strong>
                             <span>طالب</span>
                         </div>
-                        <div className={styles.stat}>
+                        <div className={"auth-stat"}>
                             <strong>1,542</strong>
                             <span>كورس</span>
                         </div>
-                        <div className={styles.stat}>
+                        <div className={"auth-stat"}>
                             <strong>4.9 ★</strong>
                             <span>تقييم</span>
                         </div>

@@ -1,0 +1,436 @@
+"use client";
+import { useState } from "react";
+import { createClient } from "@/lib/supabase";
+
+/* ── Default values (fallback لو مفيش بيانات في Supabase) ── */
+const DEFAULT_HERO = {
+    title: "تعلّم واحترف في",
+    highlight: "أي مجال تحب",
+    subtitle: "منصة تعليمية عربية متكاملة — كورسات احترافية بشهادات معتمدة",
+    cta_primary: "ابدأ الآن مجاناً",
+    cta_secondary: "تصفح الكورسات",
+    stats: [
+        { value: "+10,000", label: "طالب نشط" },
+        { value: "+500", label: "كورس متاح" },
+        { value: "4.9★", label: "تقييم المنصة" },
+    ],
+};
+
+const DEFAULT_CTA = {
+    title: "ابدأ رحلتك التعليمية اليوم",
+    subtitle: "انضم لآلاف الطلاب وابدأ رحلتك نحو الاحتراف",
+    cta_primary: "سجل الآن مجاناً",
+    cta_secondary: "تصفح الكورسات",
+    features: ["بدون رسوم اشتراك", "كورسات محدّثة باستمرار", "شهادات معتمدة"],
+};
+
+const DEFAULT_TESTIMONIALS = [
+    { name: "أحمد محمد", role: "مطور ويب", text: "المنصة غيّرت حياتي المهنية بالكامل!", rating: 5, avatar: "👨‍💻" },
+    { name: "سارة علي", role: "مصممة جرافيك", text: "كورسات احترافية بشرح واضح ومبسط جداً.", rating: 5, avatar: "👩‍🎨" },
+];
+
+/* ── Sub-components ── */
+
+function SectionHeader({ icon, title, isOpen, onToggle }) {
+    return (
+        <button className="LandingEditor-sectionHeader" onClick={onToggle} type="button">
+            <span className="LandingEditor-sectionIcon">{icon}</span>
+            <span className="LandingEditor-sectionTitle">{title}</span>
+            <span className="LandingEditor-sectionChevron">{isOpen ? "▲" : "▼"}</span>
+        </button>
+    );
+}
+
+function Field({ label, children }) {
+    return (
+        <div className="LandingEditor-field">
+            <label className="LandingEditor-label">{label}</label>
+            {children}
+        </div>
+    );
+}
+
+/* ── Hero Section ── */
+function HeroEditor({ hero, onChange }) {
+    const updateStat = (idx, key, val) => {
+        const next = hero.stats.map((s, i) => i === idx ? { ...s, [key]: val } : s);
+        onChange({ ...hero, stats: next });
+    };
+
+    const addStat = () =>
+        onChange({ ...hero, stats: [...(hero.stats ?? []), { value: "", label: "" }] });
+
+    const removeStat = (idx) =>
+        onChange({ ...hero, stats: hero.stats.filter((_, i) => i !== idx) });
+
+    return (
+        <div className="LandingEditor-body">
+            <div className="LandingEditor-grid2">
+                <Field label="العنوان الرئيسي">
+                    <input
+                        className="LandingEditor-input"
+                        value={hero.title ?? ""}
+                        onChange={e => onChange({ ...hero, title: e.target.value })}
+                        placeholder="تعلّم واحترف في"
+                    />
+                </Field>
+                <Field label="الكلمة المميّزة (ملوّنة)">
+                    <input
+                        className="LandingEditor-input"
+                        value={hero.highlight ?? ""}
+                        onChange={e => onChange({ ...hero, highlight: e.target.value })}
+                        placeholder="أي مجال تحب"
+                    />
+                </Field>
+            </div>
+
+            <Field label="الوصف / Subtitle">
+                <textarea
+                    className="LandingEditor-textarea"
+                    rows={3}
+                    value={hero.subtitle ?? ""}
+                    onChange={e => onChange({ ...hero, subtitle: e.target.value })}
+                    placeholder="منصة تعليمية عربية متكاملة..."
+                />
+            </Field>
+
+            <div className="LandingEditor-grid2">
+                <Field label="نص الزر الأساسي">
+                    <input
+                        className="LandingEditor-input"
+                        value={hero.cta_primary ?? ""}
+                        onChange={e => onChange({ ...hero, cta_primary: e.target.value })}
+                        placeholder="ابدأ الآن مجاناً"
+                    />
+                </Field>
+                <Field label="نص الزر الثانوي">
+                    <input
+                        className="LandingEditor-input"
+                        value={hero.cta_secondary ?? ""}
+                        onChange={e => onChange({ ...hero, cta_secondary: e.target.value })}
+                        placeholder="تصفح الكورسات"
+                    />
+                </Field>
+            </div>
+
+            {/* Stats */}
+            <div className="LandingEditor-statsHeader">
+                <span className="LandingEditor-label">الإحصائيات (Stats)</span>
+                <button className="LandingEditor-addBtn" onClick={addStat} type="button">
+                    + إضافة إحصائية
+                </button>
+            </div>
+
+            <div className="LandingEditor-statsList">
+                {(hero.stats ?? []).map((stat, idx) => (
+                    <div key={idx} className="LandingEditor-statRow">
+                        <input
+                            className="LandingEditor-input LandingEditor-statVal"
+                            value={stat.value}
+                            onChange={e => updateStat(idx, "value", e.target.value)}
+                            placeholder="مثال: +10,000"
+                        />
+                        <input
+                            className="LandingEditor-input LandingEditor-statLbl"
+                            value={stat.label}
+                            onChange={e => updateStat(idx, "label", e.target.value)}
+                            placeholder="مثال: طالب نشط"
+                        />
+                        <button
+                            className="LandingEditor-removeBtn"
+                            onClick={() => removeStat(idx)}
+                            type="button"
+                            title="حذف"
+                        >✕</button>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+/* ── Testimonials Section ── */
+function TestimonialsEditor({ testimonials, onChange }) {
+    const update = (idx, key, val) => {
+        const next = testimonials.map((t, i) => i === idx ? { ...t, [key]: val } : t);
+        onChange(next);
+    };
+
+    const add = () =>
+        onChange([...testimonials, { name: "", role: "", text: "", rating: 5, avatar: "⭐" }]);
+
+    const remove = (idx) =>
+        onChange(testimonials.filter((_, i) => i !== idx));
+
+    return (
+        <div className="LandingEditor-body">
+            {testimonials.map((t, idx) => (
+                <div key={idx} className="LandingEditor-testimonialCard">
+                    <div className="LandingEditor-testimonialCardHeader">
+                        <span className="LandingEditor-testimonialNum">#{idx + 1}</span>
+                        <button
+                            className="LandingEditor-removeBtn"
+                            onClick={() => remove(idx)}
+                            type="button"
+                        >✕ حذف</button>
+                    </div>
+
+                    <div className="LandingEditor-grid3">
+                        <Field label="الاسم">
+                            <input
+                                className="LandingEditor-input"
+                                value={t.name}
+                                onChange={e => update(idx, "name", e.target.value)}
+                                placeholder="أحمد محمد"
+                            />
+                        </Field>
+                        <Field label="الدور / المهنة">
+                            <input
+                                className="LandingEditor-input"
+                                value={t.role}
+                                onChange={e => update(idx, "role", e.target.value)}
+                                placeholder="مطور ويب"
+                            />
+                        </Field>
+                        <Field label="الأيقونة / Avatar">
+                            <input
+                                className="LandingEditor-input"
+                                value={t.avatar}
+                                onChange={e => update(idx, "avatar", e.target.value)}
+                                placeholder="👨‍💻"
+                            />
+                        </Field>
+                    </div>
+
+                    <Field label="التقييم (1-5)">
+                        <div className="LandingEditor-ratingRow">
+                            {[1, 2, 3, 4, 5].map(star => (
+                                <button
+                                    key={star}
+                                    type="button"
+                                    className={`LandingEditor-starBtn${t.rating >= star ? " LandingEditor-starActive" : ""}`}
+                                    onClick={() => update(idx, "rating", star)}
+                                >★</button>
+                            ))}
+                        </div>
+                    </Field>
+
+                    <Field label="نص الشهادة">
+                        <textarea
+                            className="LandingEditor-textarea"
+                            rows={3}
+                            value={t.text}
+                            onChange={e => update(idx, "text", e.target.value)}
+                            placeholder="المنصة غيّرت حياتي المهنية..."
+                        />
+                    </Field>
+                </div>
+            ))}
+
+            <button className="LandingEditor-addBtn LandingEditor-addTestimonial" onClick={add} type="button">
+                + إضافة شهادة جديدة
+            </button>
+        </div>
+    );
+}
+
+/* ── CTA Section ── */
+function CtaEditor({ cta, onChange }) {
+    const updateFeature = (idx, val) => {
+        const next = (cta.features ?? []).map((f, i) => i === idx ? val : f);
+        onChange({ ...cta, features: next });
+    };
+
+    const addFeature = () =>
+        onChange({ ...cta, features: [...(cta.features ?? []), ""] });
+
+    const removeFeature = (idx) =>
+        onChange({ ...cta, features: (cta.features ?? []).filter((_, i) => i !== idx) });
+
+    return (
+        <div className="LandingEditor-body">
+            <div className="LandingEditor-grid2">
+                <Field label="عنوان CTA">
+                    <input
+                        className="LandingEditor-input"
+                        value={cta.title ?? ""}
+                        onChange={e => onChange({ ...cta, title: e.target.value })}
+                        placeholder="ابدأ رحلتك التعليمية اليوم"
+                    />
+                </Field>
+                <Field label="وصف CTA">
+                    <input
+                        className="LandingEditor-input"
+                        value={cta.subtitle ?? ""}
+                        onChange={e => onChange({ ...cta, subtitle: e.target.value })}
+                        placeholder="انضم لآلاف الطلاب..."
+                    />
+                </Field>
+            </div>
+
+            <div className="LandingEditor-grid2">
+                <Field label="نص الزر الأساسي">
+                    <input
+                        className="LandingEditor-input"
+                        value={cta.cta_primary ?? ""}
+                        onChange={e => onChange({ ...cta, cta_primary: e.target.value })}
+                        placeholder="سجل الآن مجاناً"
+                    />
+                </Field>
+                <Field label="نص الزر الثانوي">
+                    <input
+                        className="LandingEditor-input"
+                        value={cta.cta_secondary ?? ""}
+                        onChange={e => onChange({ ...cta, cta_secondary: e.target.value })}
+                        placeholder="تصفح الكورسات"
+                    />
+                </Field>
+            </div>
+
+            {/* Features */}
+            <div className="LandingEditor-statsHeader">
+                <span className="LandingEditor-label">المميزات (Features)</span>
+                <button className="LandingEditor-addBtn" onClick={addFeature} type="button">
+                    + إضافة ميزة
+                </button>
+            </div>
+
+            <div className="LandingEditor-statsList">
+                {(cta.features ?? []).map((f, idx) => (
+                    <div key={idx} className="LandingEditor-statRow">
+                        <input
+                            className="LandingEditor-input"
+                            value={f}
+                            onChange={e => updateFeature(idx, e.target.value)}
+                            placeholder="مثال: بدون رسوم اشتراك"
+                            style={{ flex: 1 }}
+                        />
+                        <button
+                            className="LandingEditor-removeBtn"
+                            onClick={() => removeFeature(idx)}
+                            type="button"
+                            title="حذف"
+                        >✕</button>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+/* ══ Main LandingEditor ══ */
+export default function LandingEditor({ siteSettings }) {
+    const getVal = (id, def) =>
+        siteSettings?.find(s => s.id === id)?.value ?? def;
+
+    const [hero, setHero]               = useState(getVal("hero", DEFAULT_HERO));
+    const [testimonials, setTestimonials] = useState(getVal("testimonials", DEFAULT_TESTIMONIALS));
+    const [cta, setCta]                 = useState(getVal("cta", DEFAULT_CTA));
+
+    const [openSection, setOpenSection] = useState("hero");
+    const [saving, setSaving]           = useState(false);
+    const [saved, setSaved]             = useState(false);
+    const [error, setError]             = useState(null);
+
+    const supabase = createClient();
+
+    const handleSave = async () => {
+        setSaving(true);
+        setError(null);
+        setSaved(false);
+
+        try {
+            const rows = [
+                { id: "hero",         value: hero },
+                { id: "testimonials", value: testimonials },
+                { id: "cta",          value: cta },
+            ];
+
+            const { error: err } = await supabase
+                .from("site_settings")
+                .upsert(rows, { onConflict: "id" });
+
+            if (err) throw err;
+
+            setSaved(true);
+            setTimeout(() => setSaved(false), 3000);
+        } catch (e) {
+            setError(e.message ?? "حدث خطأ أثناء الحفظ");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const sections = [
+        {
+            id: "hero",
+            icon: "🚀",
+            title: "Hero Section — العنوان والإحصائيات",
+            content: <HeroEditor hero={hero} onChange={setHero} />,
+        },
+        {
+            id: "testimonials",
+            icon: "💬",
+            title: "Testimonials — آراء الطلاب",
+            content: <TestimonialsEditor testimonials={testimonials} onChange={setTestimonials} />,
+        },
+        {
+            id: "cta",
+            icon: "🎯",
+            title: "CTA Section — الدعوة للتسجيل",
+            content: <CtaEditor cta={cta} onChange={setCta} />,
+        },
+    ];
+
+    return (
+        <div className="LandingEditor-root">
+            <div className="LandingEditor-topbar">
+                <div>
+                    <h2 className="LandingEditor-pageTitle">🖊 تحرير محتوى الصفحة الرئيسية</h2>
+                    <p className="LandingEditor-pageSub">
+                        أي تغيير تحفظه هيظهر فوراً للزوار في الصفحة الرئيسية
+                    </p>
+                </div>
+
+                <div className="LandingEditor-saveArea">
+                    {error && <span className="LandingEditor-error">⚠ {error}</span>}
+                    {saved && <span className="LandingEditor-successMsg">✓ تم الحفظ بنجاح!</span>}
+                    <button
+                        className={`LandingEditor-saveBtn${saving ? " LandingEditor-savingBtn" : ""}`}
+                        onClick={handleSave}
+                        disabled={saving}
+                    >
+                        {saving ? "⏳ جاري الحفظ..." : "💾 حفظ التغييرات"}
+                    </button>
+                </div>
+            </div>
+
+            {/* Live Preview hint */}
+            <div className="LandingEditor-previewHint">
+                <span>👁</span>
+                <span>
+                    لمعاينة التغييرات انتقل للـ{" "}
+                    <a href="/" target="_blank" rel="noreferrer" className="LandingEditor-previewLink">
+                        الصفحة الرئيسية ↗
+                    </a>
+                    {" "}بعد الحفظ
+                </span>
+            </div>
+
+            {/* Accordion Sections */}
+            <div className="LandingEditor-accordion">
+                {sections.map(sec => (
+                    <div key={sec.id} className="LandingEditor-section">
+                        <SectionHeader
+                            icon={sec.icon}
+                            title={sec.title}
+                            isOpen={openSection === sec.id}
+                            onToggle={() => setOpenSection(openSection === sec.id ? null : sec.id)}
+                        />
+                        {openSection === sec.id && sec.content}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}

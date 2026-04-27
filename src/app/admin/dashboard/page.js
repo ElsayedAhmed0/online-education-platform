@@ -34,6 +34,10 @@ export default async function AdminDashboardPage() {
         .order("created_at", { ascending: false })
         .limit(20);
 
+    const { data: siteSettings } = await supabase
+        .from("site_settings")
+        .select("*");
+
     const totalRevenue = transactions
         ?.filter(t => t.type === "purchase")
         .reduce((sum, t) => sum + t.amount, 0) ?? 0;
@@ -45,6 +49,7 @@ export default async function AdminDashboardPage() {
             courses={courses ?? []}
             transactions={transactions ?? []}
             totalRevenue={totalRevenue}
+            siteSettings={siteSettings ?? []}
         />
     );
 }

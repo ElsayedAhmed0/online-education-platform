@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase";
-import styles from "./NavBar.module.scss";
+
 
 export default function NavBar() {
     const router = useRouter();
@@ -58,22 +58,22 @@ export default function NavBar() {
     ];
 
     return (
-        <nav className={`${styles.nav} ${scrolled ? styles.scrolled : ""}`}>
-            <div className={styles.container}>
+        <nav className={`${"NavBar-nav"} ${scrolled ? "NavBar-scrolled" : ""}`}>
+            <div className={"NavBar-container"}>
 
                 {/* Logo */}
-                <Link href="/" className={styles.logo}>
-                    <div className={styles.logoIcon}>E</div>
-                    <span className={styles.logoName}>Edu<span>Platform</span></span>
+                <Link href="/" className={"NavBar-logo"}>
+                    <div className={"NavBar-logoIcon"}>E</div>
+                    <span className={"NavBar-logoName"}>Edu<span>Platform</span></span>
                 </Link>
 
                 {/* Links */}
-                <div className={styles.links}>
+                <div className={"NavBar-links"}>
                     {NAV_LINKS.map(l => (
                         <Link
                             key={l.href}
                             href={l.href}
-                            className={`${styles.link} ${pathname === l.href ? styles.linkActive : ""}`}
+                            className={`${"NavBar-link"} ${pathname === l.href ? "NavBar-linkActive" : ""}`}
                         >
                             {l.label}
                         </Link>
@@ -81,11 +81,11 @@ export default function NavBar() {
                 </div>
 
                 {/* Actions */}
-                <div className={styles.actions}>
+                <div className={"NavBar-actions"}>
                     {user ? (
-                        <div className={styles.userMenu}>
+                        <div className={"NavBar-userMenu"}>
                             <div
-                                className={styles.avatar}
+                                className={"NavBar-avatar"}
                                 onClick={() => setMenuOpen(!menuOpen)}
                             >
                                 {profile?.avatar_url
@@ -95,21 +95,24 @@ export default function NavBar() {
                             </div>
 
                             {menuOpen && (
-                                <div className={styles.dropdown}>
-                                    <div className={styles.dropdownHeader}>
+                                <div className={"NavBar-dropdown"}>
+                                    <div className={"NavBar-dropdownHeader"}>
                                         <strong>{profile?.name}</strong>
                                         <span>{user.email}</span>
                                     </div>
-                                    <div className={styles.dropdownDivider} />
-                                    <Link href="/dashboard" className={styles.dropdownItem} onClick={() => setMenuOpen(false)}>🎓 داشبورد الطالب</Link>
+                                    <div className={"NavBar-dropdownDivider"} />
+                                    <Link href="/dashboard" className={"NavBar-dropdownItem"} onClick={() => setMenuOpen(false)}>🎓 داشبورد الطالب</Link>
                                     {profile?.role === "instructor" && (
-                                        <Link href="/instructor/dashboard" className={styles.dropdownItem} onClick={() => setMenuOpen(false)}>📚 داشبورد المدرس</Link>
+                                        <Link href="/instructor/dashboard" className={"NavBar-dropdownItem"} onClick={() => setMenuOpen(false)}>📚 داشبورد المدرس</Link>
                                     )}
                                     {profile?.role === "admin" && (
-                                        <Link href="/admin/dashboard" className={styles.dropdownItem} onClick={() => setMenuOpen(false)}>🛡 لوحة الأدمن</Link>
+                                        <Link href="/admin/dashboard" className={"NavBar-dropdownItem"} onClick={() => setMenuOpen(false)}>🛡 لوحة الأدمن</Link>
                                     )}
-                                    <div className={styles.dropdownDivider} />
-                                    <button className={styles.dropdownLogout} onClick={handleLogout}>
+                                    <Link href="/profile" className={"NavBar-dropdownItem"} onClick={() => setMenuOpen(false)}>
+                                        👤 الملف الشخصي
+                                    </Link>
+                                    <div className={"NavBar-dropdownDivider"} />
+                                    <button className={"NavBar-dropdownLogout"} onClick={handleLogout}>
                                         تسجيل الخروج
                                     </button>
                                 </div>
@@ -117,8 +120,8 @@ export default function NavBar() {
                         </div>
                     ) : (
                         <>
-                            <Link href="/login" className={styles.btnLogin}>دخول</Link>
-                            <Link href="/register" className={styles.btnRegister}>إنشاء حساب</Link>
+                            <Link href="/login" className={"NavBar-btnLogin"}>دخول</Link>
+                            <Link href="/register" className={"NavBar-btnRegister"}>إنشاء حساب</Link>
                         </>
                     )}
                 </div>

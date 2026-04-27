@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import styles from "./CoursesGrid.module.scss";
+
 
 const CATEGORIES = ["الكل", "برمجة", "تصميم", "ذكاء اصطناعي", "تسويق", "إدارة"];
 
@@ -14,31 +14,31 @@ const LEVELS = {
 
 function CourseCard({ course }) {
     return (
-        <Link href={`/courses/${course.id}`} className={styles.card}>
-            <div className={styles.thumbnail}>
+        <Link href={`/courses/${course.id}`} className={"CoursesGrid-card"}>
+            <div className={"CoursesGrid-thumbnail"}>
                 <img src={course.thumbnail} alt={course.title} />
-                <div className={styles.category}>{course.category}</div>
+                <div className={"CoursesGrid-category"}>{course.category}</div>
             </div>
-            <div className={styles.body}>
-                <div className={styles.level}>{LEVELS[course.level] ?? course.level}</div>
-                <h3 className={styles.title}>{course.title}</h3>
-                <div className={styles.instructor}>
+            <div className={"CoursesGrid-body"}>
+                <div className={"CoursesGrid-level"}>{LEVELS[course.level] ?? course.level}</div>
+                <h3 className={"CoursesGrid-title"}>{course.title}</h3>
+                <div className={"CoursesGrid-instructor"}>
                     👤 {course.profiles?.name ?? "مدرس"}
                 </div>
-                <div className={styles.meta}>
-                    <span className={styles.rating}>★ {course.rating}</span>
-                    <span className={styles.students}>
+                <div className={"CoursesGrid-meta"}>
+                    <span className={"CoursesGrid-rating"}>★ {course.rating}</span>
+                    <span className={"CoursesGrid-students"}>
                         {course.students_count?.toLocaleString()} طالب
                     </span>
                 </div>
-                <div className={styles.footer}>
-                    <div className={styles.price}>
-                        <span className={styles.currentPrice}>{course.price} ج.م</span>
+                <div className={"CoursesGrid-footer"}>
+                    <div className={"CoursesGrid-price"}>
+                        <span className={"CoursesGrid-currentPrice"}>{course.price} ج.م</span>
                         {course.old_price && (
-                            <span className={styles.oldPrice}>{course.old_price} ج.م</span>
+                            <span className={"CoursesGrid-oldPrice"}>{course.old_price} ج.م</span>
                         )}
                     </div>
-                    <div className={styles.enrollBtn}>سجّل الآن</div>
+                    <div className={"CoursesGrid-enrollBtn"}>سجّل الآن</div>
                 </div>
             </div>
         </Link>
@@ -56,15 +56,15 @@ export default function CoursesGrid({ courses }) {
     });
 
     return (
-        <div className={styles.page}>
+        <div className={"CoursesGrid-page"}>
             {/* Hero */}
-            <div className={styles.hero}>
+            <div className={"CoursesGrid-hero"}>
                 <h1>اكتشف <span>أفضل الكورسات</span> العربية</h1>
                 <p>تعلّم من أفضل الخبراء واحصل على شهادات معتمدة تفتح لك أبواب الفرص</p>
 
                 {/* Search */}
-                <div className={styles.searchBar}>
-                    <span className={styles.searchIcon}>🔍</span>
+                <div className={"CoursesGrid-searchBar"}>
+                    <span className={"CoursesGrid-searchIcon"}>🔍</span>
                     <input
                         placeholder="ابحث عن كورس..."
                         value={search}
@@ -74,11 +74,11 @@ export default function CoursesGrid({ courses }) {
             </div>
 
             {/* Categories */}
-            <div className={styles.categories}>
+            <div className={"CoursesGrid-categories"}>
                 {CATEGORIES.map(cat => (
                     <button
                         key={cat}
-                        className={`${styles.catBtn} ${activeCategory === cat ? styles.catActive : ""}`}
+                        className={`${"CoursesGrid-catBtn"} ${activeCategory === cat ? "CoursesGrid-catActive" : ""}`}
                         onClick={() => setActiveCategory(cat)}
                     >
                         {cat}
@@ -87,18 +87,18 @@ export default function CoursesGrid({ courses }) {
             </div>
 
             {/* Results count */}
-            <div className={styles.resultsBar}>
+            <div className={"CoursesGrid-resultsBar"}>
                 <span>{filtered.length} كورس</span>
             </div>
 
             {/* Grid */}
             {filtered.length === 0 ? (
-                <div className={styles.empty}>
+                <div className={"CoursesGrid-empty"}>
                     <div>🔍</div>
                     <p>لا توجد كورسات تطابق بحثك</p>
                 </div>
             ) : (
-                <div className={styles.grid}>
+                <div className={"CoursesGrid-grid"}>
                     {filtered.map(course => (
                         <CourseCard key={course.id} course={course} />
                     ))}
