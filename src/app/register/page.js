@@ -28,6 +28,12 @@ export default function RegisterPage() {
     if (form.password.length < 6) return setError("كلمة المرور 6 أحرف على الأقل");
 
     setLoading(true);
+    // منع تسجيل أدمن من الصفحة
+    if (role === "admin") {
+      setError("غير مسموح بإنشاء حساب أدمن");
+      setLoading(false);
+      return;
+    }
     try {
       const { data, error } = await supabase.auth.signUp({
         email: form.email,

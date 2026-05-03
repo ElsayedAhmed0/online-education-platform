@@ -1,9 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import AddLessonModal from "./AddLessonModal";
 import CouponsManager from "./CouponsManager";
+import NotificationsTab from "@/components/common/NotificationsTab";
 
 const STATUS_LABELS = {
     live: { label: "منشور", color: "#10B981", bg: "rgba(16,185,129,.12)" },
@@ -20,10 +21,53 @@ export default function InstructorDashboardClient({
     const [activeTab, setActiveTab] = useState("overview");
     const [showAddLesson, setShowAddLesson] = useState(false);
     const [selectedCourse, setSelectedCourse] = useState(null);
+    const [userId, setUserId] = useState(null);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [students, setStudents] = useState([]);
+    const [studentsLoaded, setStudentsLoaded] = useState(false);
+    const [selectedCourseStudents, setSelectedCourseStudents] = useState(null);
+
+    useEffect(() => {
+        supabase.auth.getUser().then(({ data: { user } }) => {
+            if (!user) return;
+            setUserId(user.id);
+            supabase
+                .from("notifications")
+                .select("id", { count: "exact" })
+                .or(`user_id.eq.${user.id},type.eq.announcement`)
+                .eq("is_read", false)
+                .then(({ count }) => setUnreadCount(count ?? 0));
+        });
+    }, []);
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
         router.push("/");
+    };
+
+    const fetchStudents = async (courseId) => {
+        setSelectedCourseStudents(courseId);
+        const { data } = await supabase
+            .from("enrollments")
+            .select("*, profiles(id, name)")
+            .eq("course_id", courseId);
+        setStudents(data ?? []);
+        setStudentsLoaded(true);
+    };
+
+    const removeStudent = async (studentId, courseId) => {
+        const confirmed = window.confirm("هتلغي اشتراك الطالب ده؟");
+        if (!confirmed) return;
+
+        const res = await fetch("/api/instructor/remove-student", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ studentId, courseId }),
+        });
+        const data = await res.json();
+        if (!res.ok) { alert(data.error); return; }
+
+        setStudents(prev => prev.filter(s => s.profiles?.id !== studentId));
     };
 
     const avgRating = courses.length > 0
@@ -50,8 +94,9 @@ export default function InstructorDashboardClient({
                 <nav className={"InstructorDashboard-nav"}>
                     {[
                         { id: "overview", label: "الداشبورد", icon: "⊞" },
-                        { id: "courses", label: "كورساتي", icon: "📚" },
-                        { id: "earnings", label: "الأرباح", icon: "💰" },
+                        { id: "courses",  label: "كورساتي",   icon: "📚" },
+                        { id: "students", label: "طلابي",     icon: "👥" },
+                        { id: "earnings", label: "الأرباح",   icon: "💰" },
                     ].map(item => (
                         <div
                             key={item.id}
@@ -62,6 +107,15 @@ export default function InstructorDashboardClient({
                             {item.label}
                         </div>
                     ))}
+                    <div
+                        className={`${"InstructorDashboard-navItem"} ${activeTab === "notifications" ? "InstructorDashboard-navActive" : ""}`}
+                        onClick={() => { setActiveTab("notifications"); setUnreadCount(0); }}
+                    >
+                        <span>🔔</span> الإشعارات
+                        {unreadCount > 0 && (
+                            <span className={"InstructorDashboard-navBadge"}>{unreadCount > 9 ? "9+" : unreadCount}</span>
+                        )}
+                    </div>
                     <div
                         className={"InstructorDashboard-navItem"}
                         onClick={() => router.push("/instructor/courses/create")}
@@ -119,14 +173,16 @@ export default function InstructorDashboardClient({
                 {/* Tabs */}
                 <div className={"InstructorDashboard-tabs"}>
                     {[
-                        { id: "overview", label: "نظرة عامة" },
-                        { id: "courses", label: "كورساتي" },
-                        { id: "earnings", label: "الأرباح" },
+                        { id: "overview",      label: "نظرة عامة" },
+                        { id: "courses",       label: "كورساتي" },
+                        { id: "students",      label: "👥 طلابي" },
+                        { id: "earnings",      label: "الأرباح" },
+                        { id: "notifications", label: `🔔 الإشعارات${unreadCount > 0 ? ` (${unreadCount})` : ""}` },
                     ].map(t => (
                         <button
                             key={t.id}
                             className={`${"InstructorDashboard-tab"} ${activeTab === t.id ? "InstructorDashboard-tabActive" : ""}`}
-                            onClick={() => setActiveTab(t.id)}
+                            onClick={() => { setActiveTab(t.id); if (t.id === "notifications") setUnreadCount(0); }}
                         >{t.label}</button>
                     ))}
                 </div>
@@ -190,10 +246,7 @@ export default function InstructorDashboardClient({
                                     >{s.label}</span>
                                     <button
                                         className={"InstructorDashboard-addLessonBtn"}
-                                        onClick={() => {
-                                            setSelectedCourse(c.id);
-                                            setShowAddLesson(true);
-                                        }}
+                                        onClick={() => router.push(`/instructor/courses/${c.id}/manage`)}
                                     >+ إضافة درس</button>
                                 </div>
                             );
@@ -205,9 +258,87 @@ export default function InstructorDashboardClient({
                             </div>
                         )}
                     </div>
-
                 )}
+
                 <CouponsManager courses={courses} />
+
+                {/* Tab: Students */}
+                {activeTab === "students" && (
+                    <div className={"InstructorDashboard-coursesList"}>
+                        {/* اختيار الكورس */}
+                        <div style={{ marginBottom: "16px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                            {courses.map(c => (
+                                <button
+                                    key={c.id}
+                                    onClick={() => fetchStudents(c.id)}
+                                    style={{
+                                        padding: "8px 16px",
+                                        borderRadius: "8px",
+                                        border: "1px solid",
+                                        cursor: "pointer",
+                                        fontWeight: 700,
+                                        fontSize: "13px",
+                                        background: selectedCourseStudents === c.id ? "rgba(129,140,248,0.2)" : "rgba(255,255,255,0.05)",
+                                        color: selectedCourseStudents === c.id ? "#818CF8" : "rgba(255,255,255,0.6)",
+                                        borderColor: selectedCourseStudents === c.id ? "#818CF8" : "rgba(255,255,255,0.1)",
+                                    }}
+                                >
+                                    {c.title}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* جدول الطلاب */}
+                        {studentsLoaded && (
+                            students.length === 0 ? (
+                                <div className={"InstructorDashboard-empty"}>
+                                    <div>👥</div>
+                                    <p>لا يوجد طلاب في هذا الكورس</p>
+                                </div>
+                            ) : (
+                                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                                    <thead>
+                                        <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+                                            <th style={{ padding: "12px", textAlign: "right", color: "rgba(255,255,255,0.5)" }}>الطالب</th>
+                                            <th style={{ padding: "12px", textAlign: "right", color: "rgba(255,255,255,0.5)" }}>التقدم</th>
+                                            <th style={{ padding: "12px", textAlign: "right", color: "rgba(255,255,255,0.5)" }}>إجراء</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {students.map(s => (
+                                            <tr key={s.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                                                <td style={{ padding: "12px", color: "#fff", fontWeight: 700 }}>
+                                                    {s.profiles?.name ?? "طالب"}
+                                                </td>
+                                                <td style={{ padding: "12px", color: "#10B981" }}>
+                                                    {s.progress ?? 0}%
+                                                </td>
+                                                <td style={{ padding: "12px" }}>
+                                                    <button
+                                                        onClick={() => removeStudent(s.profiles?.id, selectedCourseStudents)}
+                                                        style={{
+                                                            background: "rgba(239,68,68,0.15)",
+                                                            color: "#EF4444",
+                                                            border: "1px solid rgba(239,68,68,0.3)",
+                                                            borderRadius: "6px",
+                                                            padding: "4px 12px",
+                                                            cursor: "pointer",
+                                                            fontSize: "13px",
+                                                            fontWeight: 700,
+                                                        }}
+                                                    >
+                                                        🗑️ إلغاء الاشتراك
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )
+                        )}
+                    </div>
+                )}
+
                 {/* Tab: Earnings */}
                 {activeTab === "earnings" && (
                     <div className={"InstructorDashboard-coursesList"}>
@@ -235,6 +366,15 @@ export default function InstructorDashboardClient({
                             ))
                         )}
                     </div>
+                )}
+
+                {/* Tab: Notifications */}
+                {activeTab === "notifications" && userId && (
+                    <NotificationsTab
+                        userId={userId}
+                        userRole="instructor"
+                        prefix="InstructorDashboard"
+                    />
                 )}
             </main>
 

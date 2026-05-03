@@ -8,7 +8,8 @@ const DEFAULT_HERO = {
     highlight: "أي مجال تحب",
     subtitle: "منصة تعليمية عربية متكاملة — كورسات احترافية بشهادات معتمدة",
     cta_primary: "ابدأ الآن مجاناً",
-    cta_secondary: "تصفح الكورسات",
+    cta_secondary: "شاهد كيف تعمل",
+    welcome_video_url: "",
     stats: [
         { value: "+10,000", label: "طالب نشط" },
         { value: "+500", label: "كورس متاح" },
@@ -51,7 +52,29 @@ function Field({ label, children }) {
 }
 
 /* ── Hero Section ── */
-function HeroEditor({ hero, onChange }) {
+function HeroEditor({ hero, onChange, supabase }) {
+    const [uploadingVideo, setUploadingVideo] = useState(false);
+
+    const handleVideoUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setUploadingVideo(true);
+        try {
+            const path = `welcome-video/${Date.now()}_${file.name}`;
+            const { error } = await supabase.storage.from("eduplatform").upload(path, file, { upsert: true });
+            if (error) throw error;
+            
+            const { data } = supabase.storage.from("eduplatform").getPublicUrl(path);
+            onChange({ ...hero, welcome_video_url: data.publicUrl });
+        } catch (err) {
+            alert("خطأ في رفع الفيديو: " + err.message);
+        } finally {
+            setUploadingVideo(false);
+            e.target.value = ""; // reset input
+        }
+    };
+
     const updateStat = (idx, key, val) => {
         const next = hero.stats.map((s, i) => i === idx ? { ...s, [key]: val } : s);
         onChange({ ...hero, stats: next });
@@ -112,6 +135,40 @@ function HeroEditor({ hero, onChange }) {
                     />
                 </Field>
             </div>
+
+            <Field label="الفيديو الترحيبي (رابط يوتيوب أو رفع من الجهاز)">
+                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                    <input
+                        className="LandingEditor-input"
+                        value={hero.welcome_video_url ?? ""}
+                        onChange={e => onChange({ ...hero, welcome_video_url: e.target.value })}
+                        placeholder="رابط يوتيوب أو مسار الملف المرفوع..."
+                        style={{ flex: 1 }}
+                    />
+                    <label 
+                        className="LandingEditor-uploadBtn" 
+                        style={{ 
+                            cursor: uploadingVideo ? "not-allowed" : "pointer", 
+                            padding: "10px 16px", 
+                            background: "var(--color-1)", 
+                            borderRadius: "var(--radius-sm)", 
+                            color: "var(--text-primary)", 
+                            fontWeight: "bold", 
+                            whiteSpace: "nowrap",
+                            opacity: uploadingVideo ? 0.6 : 1
+                        }}
+                    >
+                        {uploadingVideo ? "⏳ جاري الرفع..." : "📁 رفع فيديو"}
+                        <input 
+                            type="file" 
+                            accept="video/*" 
+                            hidden 
+                            disabled={uploadingVideo} 
+                            onChange={handleVideoUpload} 
+                        />
+                    </label>
+                </div>
+            </Field>
 
             {/* Stats */}
             <div className="LandingEditor-statsHeader">
@@ -366,7 +423,7 @@ export default function LandingEditor({ siteSettings }) {
             id: "hero",
             icon: "🚀",
             title: "Hero Section — العنوان والإحصائيات",
-            content: <HeroEditor hero={hero} onChange={setHero} />,
+            content: <HeroEditor hero={hero} onChange={setHero} supabase={supabase} />,
         },
         {
             id: "testimonials",

@@ -1,13 +1,32 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
+import NotificationsTab from "@/components/common/NotificationsTab";
 
 
 export default function StudentDashboardClient({ profile, enrollments }) {
     const router = useRouter();
     const supabase = createClient();
     const [activeTab, setActiveTab] = useState("courses");
+    const [userId, setUserId] = useState(null);
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    useEffect(() => {
+        supabase.auth.getUser().then(({ data: { user } }) => {
+            if (user) setUserId(user.id);
+        });
+        // جيب عدد غير المقروء
+        supabase.auth.getUser().then(({ data: { user } }) => {
+            if (!user) return;
+            supabase
+                .from("notifications")
+                .select("id", { count: "exact" })
+                .or(`user_id.eq.${user.id},type.eq.announcement`)
+                .eq("is_read", false)
+                .then(({ count }) => setUnreadCount(count ?? 0));
+        });
+    }, []);
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -51,6 +70,13 @@ export default function StudentDashboardClient({ profile, enrollments }) {
                         onClick={() => setActiveTab("achievements")}>
                         🏆 الإنجازات
                     </div>
+                    <div className={`${"StudentDashboard-navItem"} ${activeTab === "notifications" ? "StudentDashboard-navActive" : ""}`}
+                        onClick={() => { setActiveTab("notifications"); setUnreadCount(0); }}>
+                        🔔 الإشعارات
+                        {unreadCount > 0 && (
+                            <span className={"StudentDashboard-navBadge"}>{unreadCount > 9 ? "9+" : unreadCount}</span>
+                        )}
+                    </div>
                     <div className={"StudentDashboard-navItem"} onClick={() => router.push("/")}>
                         🔍 اكتشف كورسات
                     </div>
@@ -93,11 +119,15 @@ export default function StudentDashboardClient({ profile, enrollments }) {
 
                 {/* Tabs */}
                 <div className={"StudentDashboard-tabs"}>
-                    {TABS.map(t => (
+                    {[
+                        { id: "courses",       label: "كورساتي" },
+                        { id: "achievements",  label: "الإنجازات" },
+                        { id: "notifications", label: `🔔 الإشعارات${unreadCount > 0 ? ` (${unreadCount})` : ""}` },
+                    ].map(t => (
                         <button
                             key={t.id}
                             className={`${"StudentDashboard-tab"} ${activeTab === t.id ? "StudentDashboard-tabActive" : ""}`}
-                            onClick={() => setActiveTab(t.id)}
+                            onClick={() => { setActiveTab(t.id); if (t.id === "notifications") setUnreadCount(0); }}
                         >{t.label}</button>
                     ))}
                 </div>
@@ -167,6 +197,14 @@ export default function StudentDashboardClient({ profile, enrollments }) {
                             </div>
                         ))}
                     </div>
+                )}
+                {/* Tab: Notifications */}
+                {activeTab === "notifications" && userId && (
+                    <NotificationsTab
+                        userId={userId}
+                        userRole="student"
+                        prefix="StudentDashboard"
+                    />
                 )}
             </main>
         </div>

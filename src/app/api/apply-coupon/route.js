@@ -30,6 +30,34 @@ export async function POST(request) {
             return NextResponse.json({ error: "تم استنفاد هذا الكود" }, { status: 400 });
         }
 
+        // تحقق إن المستخدم ده مستخدمش الكوبون قبل كده
+        const { data: existingUsage } = await supabase
+            .from("coupon_usages")
+            .select("id")
+            .eq("coupon_id", coupon.id)
+            .eq("user_id", user.id)
+            .single();
+
+        if (existingUsage) {
+            return NextResponse.json({ error: "استخدمت هذا الكود من قبل" }, { status: 400 });
+        }
+
+        // سجّل الاستخدام
+        const { error: usageError } = await supabase
+            .from("coupon_usages")
+            .insert({ coupon_id: coupon.id, user_id: user.id });
+
+        if (usageError) {
+            // لو حصل UNIQUE violation يبقى اتستخدم في نفس اللحظة
+            return NextResponse.json({ error: "استخدمت هذا الكود من قبل" }, { status: 400 });
+        }
+
+        // حدّث العداد
+        await supabase
+            .from("coupons")
+            .update({ used_count: (coupon.used_count || 0) + 1 })
+            .eq("id", coupon.id);
+
         return NextResponse.json({
             success: true,
             discount: coupon.discount,

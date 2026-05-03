@@ -3,6 +3,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 
+function getEmbedUrl(url) {
+    if (!url) return null;
+    const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
+    if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?rel=0`;
+    const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+    if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+    return url;
+}
 
 export default function CoursePlayerClient({
     course, sections, lessonId, enrollment, progress, userId
@@ -10,33 +18,40 @@ export default function CoursePlayerClient({
     const router = useRouter();
     const supabase = createClient();
 
-    // جمع كل الدروس في list واحدة
     const allLessons = sections.flatMap(s => s.lessons ?? []);
-    const currentLesson = allLessons.find(l => l.id === lessonId) ?? allLessons[0];
-    const completedIds = new Set(progress.filter(p => p.completed).map(p => p.lesson_id));
+    const currentLesson = allLessons.find(l => String(l.id) === String(lessonId)) ?? allLessons[0];
+    const completedIds = new Set((progress || []).filter(p => p.completed).map(p => p.lesson_id));
 
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [completed, setCompleted] = useState(completedIds);
+    const [enrollProgress, setEnrollProgress] = useState(enrollment?.progress || 0);
 
-    const currentIndex = allLessons.findIndex(l => l.id === currentLesson?.id);
-    const prevLesson = allLessons[currentIndex - 1];
-    const nextLesson = allLessons[currentIndex + 1];
+    const currentIndex = allLessons.findIndex(l => String(l.id) === String(lessonId));
+    const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
+    const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
+    const embedUrl = getEmbedUrl(currentLesson?.video_url);
 
     const markComplete = async () => {
-        if (!currentLesson) return;
+        if (!userId) { router.push("/login"); return; }
+        if (!currentLesson || completed.has(currentLesson.id) || !enrollment) return;
+
         await supabase.from("lesson_progress").upsert({
             user_id: userId,
             lesson_id: currentLesson.id,
             completed: true,
+            watched_at: new Date().toISOString(),
         });
-        setCompleted(prev => new Set([...prev, currentLesson.id]));
 
-        // حدّث الـ progress في الـ enrollment
-        const totalLessons = allLessons.length;
-        const newCompleted = completed.size + 1;
-        const pct = Math.round((newCompleted / totalLessons) * 100);
-        await supabase.from("enrollments").update({ progress: pct })
-            .eq("user_id", userId).eq("course_id", course.id);
+        const newCompleted = new Set([...completed, currentLesson.id]);
+        setCompleted(newCompleted);
+
+        const pct = Math.round((newCompleted.size / allLessons.length) * 100);
+        setEnrollProgress(pct);
+
+        await supabase.from("enrollments")
+            .update({ progress: pct })
+            .eq("user_id", userId)
+            .eq("course_id", course.id);
     };
 
     const goToLesson = (lesson) => {
@@ -45,7 +60,7 @@ export default function CoursePlayerClient({
 
     return (
         <div className={"CoursePlayer-page"}>
-            {/* Top bar */}
+            {/* Topbar */}
             <div className={"CoursePlayer-topbar"}>
                 <button className={"CoursePlayer-backBtn"} onClick={() => router.push("/dashboard")}>
                     ← الداشبورد
@@ -53,37 +68,37 @@ export default function CoursePlayerClient({
                 <div className={"CoursePlayer-topbarTitle"}>{course.title}</div>
                 <div className={"CoursePlayer-topbarProgress"}>
                     <div className={"CoursePlayer-progressTrack"}>
-                        <div
-                            className={"CoursePlayer-progressFill"}
-                            style={{ width: `${enrollment.progress}%` }}
-                        />
+                        <div className={"CoursePlayer-progressFill"} style={{ width: `${enrollProgress}%` }} />
                     </div>
-                    <span>{enrollment.progress}%</span>
+                    <span>{enrollProgress}%</span>
                 </div>
             </div>
 
             <div className={"CoursePlayer-layout"}>
-                {/* Video area */}
+                {/* Video Area */}
                 <div className={"CoursePlayer-videoArea"}>
-                    {/* Video placeholder */}
                     <div className={"CoursePlayer-videoPlayer"}>
-                        {currentLesson?.video_url ? (
+                        {embedUrl ? (
                             <iframe
-                                src={currentLesson.video_url}
+                                key={embedUrl}
+                                src={embedUrl}
                                 allowFullScreen
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                 className={"CoursePlayer-iframe"}
                             />
                         ) : (
                             <div className={"CoursePlayer-videoPlaceholder"}>
                                 <div className={"CoursePlayer-playIcon"}>▶</div>
-                                <div>{currentLesson?.title ?? "اختر درساً"}</div>
+                                <div>اختر درساً من القائمة</div>
                             </div>
                         )}
                     </div>
 
-                    {/* Lesson info */}
+                    {/* Lesson Info */}
                     <div className={"CoursePlayer-lessonInfo"}>
-                        <h2 className={"CoursePlayer-lessonTitle"}>{currentLesson?.title}</h2>
+                        <h2 className={"CoursePlayer-lessonTitle"}>
+                            {currentLesson?.title ?? "اختر درساً"}
+                        </h2>
                         <div className={"CoursePlayer-lessonActions"}>
                             <div className={"CoursePlayer-navBtns"}>
                                 <button
@@ -102,7 +117,7 @@ export default function CoursePlayerClient({
                                 onClick={markComplete}
                                 disabled={completed.has(currentLesson?.id)}
                             >
-                                {completed.has(currentLesson?.id) ? "✅ مكتمل" : "أنهيت هذا الدرس ✓"}
+                                {completed.has(currentLesson?.id) ? "✅ مكتمل" : "✓ أنهيت هذا الدرس"}
                             </button>
                         </div>
                     </div>
@@ -111,35 +126,63 @@ export default function CoursePlayerClient({
                 {/* Sidebar */}
                 <div className={`${"CoursePlayer-sidebar"} ${!sidebarOpen ? "CoursePlayer-sidebarHidden" : ""}`}>
                     <div className={"CoursePlayer-sidebarHead"}>
-                        <span>محتوى الكورس</span>
+                        <span>📋 محتوى الكورس</span>
                         <button onClick={() => setSidebarOpen(!sidebarOpen)} className={"CoursePlayer-toggleBtn"}>
                             {sidebarOpen ? "◀" : "▶"}
                         </button>
                     </div>
 
+                    <div className={"CoursePlayer-playlistProgress"}>
+                        <span>{completed.size} / {allLessons.length} درس</span>
+                        <div className={"CoursePlayer-playlistTrack"}>
+                            <div className={"CoursePlayer-playlistFill"} style={{ width: `${enrollProgress}%` }} />
+                        </div>
+                    </div>
+
                     <div className={"CoursePlayer-sectionsList"}>
-                        {sections.map(sec => (
+                        {sections.map((sec, secIdx) => (
                             <div key={sec.id} className={"CoursePlayer-section"}>
-                                <div className={"CoursePlayer-sectionTitle"}>{sec.title}</div>
-                                {sec.lessons?.map(lesson => (
-                                    <div
-                                        key={lesson.id}
-                                        className={`${"CoursePlayer-lessonRow"} ${lesson.id === currentLesson?.id ? "CoursePlayer-lessonActive" : ""} ${completed.has(lesson.id) ? "CoursePlayer-lessonDone" : ""}`}
-                                        onClick={() => goToLesson(lesson)}
-                                    >
-                                        <span className={"CoursePlayer-lessonCheck"}>
-                                            {completed.has(lesson.id) ? "✅" : "○"}
-                                        </span>
-                                        <span className={"CoursePlayer-lessonName"}>{lesson.title}</span>
-                                        <span className={"CoursePlayer-lessonDur"}>{lesson.duration}</span>
-                                    </div>
-                                ))}
+                                <div className={"CoursePlayer-sectionHeader"}>
+                                    <span className={"CoursePlayer-sectionNum"}>القسم {secIdx + 1}</span>
+                                    <span className={"CoursePlayer-sectionTitle"}>{sec.title}</span>
+                                    <span className={"CoursePlayer-sectionCount"}>
+                                        {sec.lessons?.filter(l => completed.has(l.id)).length}/{sec.lessons?.length}
+                                    </span>
+                                </div>
+
+                             // في الـ map على الدروس في السيدبار
+                                {sec.lessons?.map((lesson) => {
+                                    const globalIdx = allLessons.findIndex(l => String(l.id) === String(lesson.id));
+                                    const lessonLocked = globalIdx >= 3 && !enrollment;
+
+                                    return (
+                                        <div
+                                            key={lesson.id}
+                                            className={`${"CoursePlayer-lessonRow"} 
+                ${lesson.id === currentLesson?.id ? "CoursePlayer-lessonActive" : ""} 
+                ${completed.has(lesson.id) ? "CoursePlayer-lessonDone" : ""}`}
+                                            onClick={() => !lessonLocked && goToLesson(lesson)}
+                                            style={{ cursor: lessonLocked ? "not-allowed" : "pointer", opacity: lessonLocked ? 0.5 : 1 }}
+                                        >
+                                            <span className={"CoursePlayer-lessonCheck"}>
+                                                {lessonLocked ? "🔒" : completed.has(lesson.id) ? "✅" : "○"}
+                                            </span>
+                                            <div className={"CoursePlayer-lessonInfo2"}>
+                                                <span className={"CoursePlayer-lessonName"}>{lesson.title}</span>
+                                                <span className={"CoursePlayer-lessonMeta"}>
+                                                    {lesson.type === "video" ? "🎬" : lesson.type === "document" ? "📄" : "📝"}
+                                                    {lesson.duration && ` ${lesson.duration}`}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         ))}
 
                         {sections.length === 0 && (
                             <div className={"CoursePlayer-emptyLessons"}>
-                                المحتوى قيد الإضافة...
+                                📭 المحتوى قيد الإضافة...
                             </div>
                         )}
                     </div>

@@ -2,6 +2,8 @@ import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { redirect, notFound } from "next/navigation";
 import CoursePlayerClient from "@/components/CoursePlayer/CoursePlayerClient";
 
+export const dynamic = "force-dynamic";
+
 export default async function CoursePlayerPage({ params }) {
     const supabase = await createServerSupabaseClient();
     const { courseId, lessonId } = await params;
@@ -9,7 +11,17 @@ export default async function CoursePlayerPage({ params }) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) redirect("/login");
 
-    // تأكد إن الطالب مسجل في الكورس
+    // جيب الأقسام والدروس عشان نعرف ترتيب الدرس
+    const { data: sections } = await supabase
+        .from("sections")
+        .select("*, lessons(*)")
+        .eq("course_id", courseId)
+        .order("order_index");
+
+    const allLessons = (sections ?? []).flatMap(s => s.lessons ?? []);
+    const lessonIndex = allLessons.findIndex(l => String(l.id) === String(lessonId));
+
+    // تحقق من الاشتراك
     const { data: enrollment } = await supabase
         .from("enrollments")
         .select("*")
@@ -17,7 +29,10 @@ export default async function CoursePlayerPage({ params }) {
         .eq("course_id", courseId)
         .single();
 
-    if (!enrollment) redirect(`/courses/${courseId}`);
+    // لو مش مشترك والدرس أكبر من 3 — روح صفحة الكورس
+    if (!enrollment && lessonIndex >= 3) {
+        redirect(`/courses/${courseId}`);
+    }
 
     // جيب الكورس
     const { data: course } = await supabase
@@ -28,15 +43,8 @@ export default async function CoursePlayerPage({ params }) {
 
     if (!course) notFound();
 
-    // جيب الأقسام والدروس
-    const { data: sections } = await supabase
-        .from("sections")
-        .select("*, lessons(*)")
-        .eq("course_id", courseId)
-        .order("order_index");
-
     // جيب الـ progress
-    const { data: progress } = await supabase
+    const { data: prog } = await supabase
         .from("lesson_progress")
         .select("lesson_id, completed")
         .eq("user_id", user.id);
@@ -45,9 +53,9 @@ export default async function CoursePlayerPage({ params }) {
         <CoursePlayerClient
             course={course}
             sections={sections ?? []}
-            lessonId={Number(lessonId)}
+            lessonId={lessonId}
             enrollment={enrollment}
-            progress={progress ?? []}
+            progress={prog ?? []}
             userId={user.id}
         />
     );

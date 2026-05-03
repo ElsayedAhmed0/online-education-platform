@@ -24,7 +24,7 @@ export default async function AdminDashboardPage() {
 
     const { data: courses } = await supabase
         .from("courses")
-        .select("*, profiles(name)")
+        .select("*, profiles(name), instructor_id")
         .order("created_at", { ascending: false })
         .limit(20);
 

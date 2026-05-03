@@ -47,6 +47,34 @@ export default function ReviewForm({ courseId, onSuccess }) {
             }
 
             setDone(true);
+            // ✅ جيب المدرس بتاع الكورس + اسم الطالب
+            const { data: courseData } = await supabase
+                .from("courses")
+                .select("title, instructor_id")
+                .eq("id", courseId)
+                .single();
+
+            const { data: studentProfile } = await supabase
+                .from("profiles")
+                .select("full_name")
+                .eq("id", user.id)
+                .single();
+
+            const stars = "⭐".repeat(rating);
+            const studentName = studentProfile?.full_name ?? "أحد الطلاب";
+
+            // ✅ إشعار للمدرس
+            if (courseData?.instructor_id) {
+                await supabase.from("notifications").insert({
+                    user_id: courseData.instructor_id,
+                    type: "enrollment",
+                    title: `تقييم جديد على كورسك ${stars}`,
+                    body: `${studentName} كتب: "${comment.slice(0, 60)}${comment.length > 60 ? "..." : ""}"`,
+                    link: `/courses/${courseId}`,
+                });
+            }
+
+            setDone(true);
             onSuccess?.();
 
         } catch (err) {

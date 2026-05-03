@@ -15,22 +15,39 @@ export default function LoginPage() {
 
     const update = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
 
-    const handleSubmit = async () => {
-        setError("");
-        setLoading(true);
-        try {
-            const { error } = await supabase.auth.signInWithPassword({
-                email: form.email,
-                password: form.password,
-            });
-            if (error) throw error;
+   const handleSubmit = async () => {
+    setError("");
+    setLoading(true);
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: form.email,
+            password: form.password,
+        });
+        if (error) throw error;
+
+        // جيب الـ role وروّح للداشبورد الصح
+        const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", data.user.id)
+            .single();
+
+        const role = profile?.role ?? "student";
+
+        if (role === "admin") {
+            router.push("/admin/dashboard");
+        } else if (role === "instructor") {
+            router.push("/instructor/dashboard");
+        } else {
             router.push("/dashboard");
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
         }
-    };
+
+    } catch (err) {
+        setError(err.message);
+    } finally {
+        setLoading(false);
+    }
+};
 
     return (
         <div className={"auth-page"}>

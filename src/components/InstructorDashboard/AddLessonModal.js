@@ -91,6 +91,31 @@ export default function AddLessonModal({ courseId, onClose, onSuccess }) {
 
             if (lessonError) throw lessonError;
 
+            // ✅ جيب اسم الكورس + كل الطلاب المسجلين
+            const { data: courseData } = await supabase
+                .from("courses")
+                .select("title")
+                .eq("id", courseId)
+                .single();
+
+            const { data: enrollments } = await supabase
+                .from("enrollments")
+                .select("user_id")
+                .eq("course_id", courseId);
+
+            // ✅ ابعت إشعار لكل طالب مسجل
+            if (enrollments?.length) {
+                const notifs = enrollments.map(e => ({
+                    user_id: e.user_id,
+                    type: "new_lesson",
+                    title: `درس جديد في "${courseData?.title}" 🎓`,
+                    body: `تم إضافة درس "${form.lessonTitle}" — شوفه دلوقتي!`,
+                    link: `/courses/${courseId}`,
+                }));
+
+                await supabase.from("notifications").insert(notifs);
+            }
+
             onSuccess();
             onClose();
 

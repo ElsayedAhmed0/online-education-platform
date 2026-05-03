@@ -98,11 +98,11 @@ export default function LandingPage({ courses, hero, testimonials, cta }) {
 
                     {/* CTAs */}
                     <div className="heroCtas">
-                        <Link href="/register" className="ctaPrimary">
+                        <Link href="/courses" className="ctaPrimary">
                             {hero.cta_primary ?? "ابدأ الآن مجاناً"}
                         </Link>
-                        <Link href="/courses" className="ctaSecondary">
-                            {hero.cta_secondary ?? "تصفح الكورسات"} ←
+                        <Link href="/welcome" className="ctaSecondary">
+                            {hero.cta_secondary ?? "شاهد كيف تعمل"} ▶
                         </Link>
                     </div>
 

@@ -9,7 +9,7 @@ const LEVELS = {
     advanced: "متقدم",
 };
 
-export default function CourseDetailClient({ course, sections, reviews }) {
+export default function CourseDetailClient({ course, sections, reviews, enrollment }) {
     const router = useRouter();
     const supabase = createClient();
 
@@ -49,28 +49,17 @@ export default function CourseDetailClient({ course, sections, reviews }) {
     };
 
     const handleEnroll = async () => {
-        setLoading(true);
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) { router.push("/login"); return; }
 
-        try {
-            const res = await fetch("/api/enroll", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    courseId: course.id,
-                    couponId: promoSuccess?.couponId ?? null,
-                    finalPrice,
-                }),
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error);
-            router.push(`/learn/${course.id}/1`);
-        } catch (err) {
-            alert(err.message);
-        } finally {
-            setLoading(false);
+        // روّح لصفحة الـ checkout
+        const params = new URLSearchParams();
+        if (promoSuccess) {
+            params.set("couponId", promoSuccess.couponId);
+            params.set("discount", promoSuccess.discount);
+            params.set("code", promoCode);
         }
+        router.push(`/checkout/${course.id}?${params.toString()}`);
     };
 
     return (
@@ -100,59 +89,111 @@ export default function CourseDetailClient({ course, sections, reviews }) {
                     </div>
 
                     {/* Purchase Card */}
+                    {/* Purchase Card */}
                     <div className={"CourseDetail-purchaseCard"}>
                         <img src={course.thumbnail} alt={course.title} className={"CourseDetail-thumbnail"} />
                         <div className={"CourseDetail-cardBody"}>
-                            {/* Price */}
-                            <div className={"CourseDetail-priceRow"}>
-                                <span className={"CourseDetail-price"}>{finalPrice} ج.م</span>
-                                {(course.old_price || promoSuccess) && (
-                                    <span className={"CourseDetail-oldPrice"}>{course.price} ج.م</span>
-                                )}
-                                {promoSuccess && (
-                                    <span className={"CourseDetail-discount"}>خصم {promoSuccess.discount}%</span>
-                                )}
-                            </div>
 
-                            {/* Promo Code */}
-                            <div className={"CourseDetail-promoWrap"}>
-                                <div className={"CourseDetail-promoRow"}>
-                                    <input
-                                        className={"CourseDetail-promoInput"}
-                                        placeholder="كود الخصم..."
-                                        value={promoCode}
-                                        onChange={e => setPromoCode(e.target.value.toUpperCase())}
-                                        disabled={Boolean(promoSuccess)}
-                                    />
-                                    <button
-                                        className={"CourseDetail-promoBtn"}
-                                        onClick={handleApplyPromo}
-                                        disabled={promoLoading || Boolean(promoSuccess)}
-                                    >
-                                        {promoLoading ? "..." : promoSuccess ? "✓" : "تطبيق"}
-                                    </button>
-                                </div>
-                                {promoError && <div className={"CourseDetail-promoError"}>{promoError}</div>}
-                                {promoSuccess && (
-                                    <div className={"CourseDetail-promoSuccess"}>
-                                        🎉 خصم {promoSuccess.discount}% تم تطبيقه!
+                            {enrollment ? (
+                                /* ── مشترك بالفعل ── */
+                                <>
+                                    <div className={"CourseDetail-enrolledBadge"}>
+                                        ✅ أنت مشترك في هذا الكورس
                                     </div>
-                                )}
-                            </div>
+                                    <div className={"CourseDetail-enrolledProgress"}>
+                                        <div className={"CourseDetail-enrolledProgressRow"}>
+                                            <span>تقدمك</span>
+                                            <span>{enrollment.progress ?? 0}%</span>
+                                        </div>
+                                        <div className={"CourseDetail-progressTrack"}>
+                                            <div
+                                                className={"CourseDetail-progressFill"}
+                                                style={{ width: `${enrollment.progress ?? 0}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                    <button
+                                        className={"CourseDetail-continueBtn"}
+                                        onClick={() => {
+                                            const allLessons = sections?.flatMap(s => s.lessons ?? []) ?? [];
+                                            const firstLesson = allLessons[0];
+                                            if (firstLesson) {
+                                                router.push(`/learn/${course.id}/${firstLesson.id}`);
+                                            }
+                                        }}
+                                    >
+                                        {enrollment.progress > 0 ? "▶ متابعة الكورس" : "▶ ابدأ الكورس"}
+                                    </button>
+                                    <div className={"CourseDetail-features"}>
+                                        {["✅ وصول مدى الحياة", "📱 متاح على كل الأجهزة", "🏆 شهادة إتمام", "💬 دعم مباشر من المدرس"].map(f => (
+                                            <div key={f} className={"CourseDetail-feature"}>{f}</div>
+                                        ))}
+                                    </div>
+                                </>
+                            ) : (
+                                /* ── غير مشترك ── */
+                                <>
+                                    <div className={"CourseDetail-priceRow"}>
+                                        <span className={"CourseDetail-price"}>{finalPrice} ج.م</span>
+                                        {(course.old_price || promoSuccess) && (
+                                            <span className={"CourseDetail-oldPrice"}>{course.price} ج.م</span>
+                                        )}
+                                        {promoSuccess && (
+                                            <span className={"CourseDetail-discount"}>خصم {promoSuccess.discount}%</span>
+                                        )}
+                                    </div>
 
-                            <button
-                                className={"CourseDetail-enrollBtn"}
-                                onClick={handleEnroll}
-                                disabled={loading}
-                            >
-                                {loading ? "جاري التسجيل..." : `سجّل الآن — ${finalPrice} ج.م`}
-                            </button>
+                                    <div className={"CourseDetail-promoWrap"}>
+                                        <div className={"CourseDetail-promoRow"}>
+                                            <input
+                                                className={"CourseDetail-promoInput"}
+                                                placeholder="كود الخصم..."
+                                                value={promoCode}
+                                                onChange={e => setPromoCode(e.target.value.toUpperCase())}
+                                                disabled={Boolean(promoSuccess)}
+                                            />
+                                            <button
+                                                className={"CourseDetail-promoBtn"}
+                                                onClick={handleApplyPromo}
+                                                disabled={promoLoading || Boolean(promoSuccess)}
+                                            >
+                                                {promoLoading ? "..." : promoSuccess ? "✓" : "تطبيق"}
+                                            </button>
+                                        </div>
+                                        {promoError && <div className={"CourseDetail-promoError"}>{promoError}</div>}
+                                        {promoSuccess && (
+                                            <div className={"CourseDetail-promoSuccess"}>
+                                                🎉 خصم {promoSuccess.discount}% تم تطبيقه!
+                                            </div>
+                                        )}
+                                    </div>
 
-                            <div className={"CourseDetail-features"}>
-                                {["✅ وصول مدى الحياة", "📱 متاح على كل الأجهزة", "🏆 شهادة إتمام", "💬 دعم مباشر من المدرس"].map(f => (
-                                    <div key={f} className={"CourseDetail-feature"}>{f}</div>
-                                ))}
-                            </div>
+                                    <button className={"CourseDetail-enrollBtn"} onClick={handleEnroll}>
+                                        {promoSuccess
+                                            ? `متابعة — ${finalPrice} ج.م 🎉`
+                                            : `سجّل الآن — ${finalPrice} ج.م`}
+                                    </button>
+
+                                    <button
+                                        className={"CourseDetail-previewBtn"}
+                                        onClick={() => {
+                                            const allLessons = sections?.flatMap(s => s.lessons ?? []) ?? [];
+                                            const firstLesson = allLessons[0];
+                                            if (firstLesson) {
+                                                router.push(`/learn/${course.id}/${firstLesson.id}`);
+                                            }
+                                        }}
+                                    >
+                                        👀 مشاهدة بعض الدروس مجاناً
+                                    </button>
+
+                                    <div className={"CourseDetail-features"}>
+                                        {["✅ وصول مدى الحياة", "📱 متاح على كل الأجهزة", "🏆 شهادة إتمام", "💬 دعم مباشر من المدرس"].map(f => (
+                                            <div key={f} className={"CourseDetail-feature"}>{f}</div>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

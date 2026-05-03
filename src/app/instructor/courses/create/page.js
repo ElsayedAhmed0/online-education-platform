@@ -67,25 +67,60 @@ export default function CourseBuilderPage() {
         setError("");
         try {
             const { data: { user } } = await supabase.auth.getUser();
-            const { error } = await supabase.from("courses").insert({
-                title: form.title,
-                description: form.description,
-                category: form.category,
-                level: form.level,
-                language: form.language,
-                price: Number(form.price) || 0,
-                old_price: Number(form.old_price) || null,
-                thumbnail: form.thumbnail || null,
-                intro_video: form.intro_video || null,
-                instructor_id: user.id,
-                status: "review",
-            });
-            if (error) throw error;
-            router.push("/instructor/dashboard");
-        } catch (err) { setError(err.message); }
-        finally { setLoading(false); }
-    };
 
+            // أضف الكورس
+            const { data: course, error } = await supabase
+                .from("courses")
+                .insert({
+                    title: form.title,
+                    description: form.description,
+                    category: form.category,
+                    level: form.level,
+                    language: form.language,
+                    price: Number(form.price) || 0,
+                    old_price: Number(form.old_price) || null,
+                    thumbnail: form.thumbnail || null,
+                    intro_video: form.intro_video || null,
+                    instructor_id: user.id,
+                    status: "review",
+                })
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            // جيب اسم المدرس
+            const { data: instructorProfile } = await supabase
+                .from("profiles")
+                .select("name")
+                .eq("id", user.id)
+                .single();
+
+            // جيب الأدمن
+            const { data: adminProfile } = await supabase
+                .from("profiles")
+                .select("id")
+                .eq("role", "admin")
+                .single();
+
+            // ✅ إشعار للأدمن
+            if (adminProfile?.id) {
+                await supabase.from("notifications").insert({
+                    user_id: adminProfile.id,
+                    type: "new_course",
+                    title: "📚 كورس جديد ينتظر مراجعتك",
+                    body: `${instructorProfile?.name ?? "مدرس"} رفع كورس "${form.title}" للمراجعة`,
+                    link: "/admin/dashboard",
+                });
+            }
+
+            router.push("/instructor/dashboard");
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
     return (
         <div className={"CourseBuilder-page"}>
             {/* Topbar */}
