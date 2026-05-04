@@ -56,19 +56,38 @@ export default function InstructorDashboardClient({
     };
 
     const removeStudent = async (studentId, courseId) => {
-        const confirmed = window.confirm("هتلغي اشتراك الطالب ده؟");
-        if (!confirmed) return;
+    // شيل الـ confirm مؤقتاً
+    // const confirmed = window.confirm("هتلغي اشتراك الطالب ده؟");
+    // if (!confirmed) return;
 
+    console.log("=== بدأ الإلغاء ===");
+    console.log("studentId:", studentId);
+    console.log("courseId:", courseId);
+
+    try {
         const res = await fetch("/api/instructor/remove-student", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ studentId, courseId }),
         });
-        const data = await res.json();
-        if (!res.ok) { alert(data.error); return; }
 
-        setStudents(prev => prev.filter(s => s.profiles?.id !== studentId));
-    };
+        console.log("HTTP Status:", res.status);
+        const data = await res.json();
+        console.log("Response:", data);
+
+        if (!res.ok) { 
+            alert("❌ خطأ: " + data.error); 
+            return; 
+        }
+
+        alert("✅ تم الإلغاء");
+        await fetchStudents(courseId);
+
+    } catch (err) {
+        console.log("❌ Fetch error:", err.message);
+        alert("❌ مشكلة: " + err.message);
+    }
+};
 
     const avgRating = courses.length > 0
         ? (courses.reduce((sum, c) => sum + (c.rating ?? 0), 0) / courses.length).toFixed(1)
@@ -94,9 +113,9 @@ export default function InstructorDashboardClient({
                 <nav className={"InstructorDashboard-nav"}>
                     {[
                         { id: "overview", label: "الداشبورد", icon: "⊞" },
-                        { id: "courses",  label: "كورساتي",   icon: "📚" },
-                        { id: "students", label: "طلابي",     icon: "👥" },
-                        { id: "earnings", label: "الأرباح",   icon: "💰" },
+                        { id: "courses", label: "كورساتي", icon: "📚" },
+                        { id: "students", label: "طلابي", icon: "👥" },
+                        { id: "earnings", label: "الأرباح", icon: "💰" },
                     ].map(item => (
                         <div
                             key={item.id}
@@ -173,10 +192,10 @@ export default function InstructorDashboardClient({
                 {/* Tabs */}
                 <div className={"InstructorDashboard-tabs"}>
                     {[
-                        { id: "overview",      label: "نظرة عامة" },
-                        { id: "courses",       label: "كورساتي" },
-                        { id: "students",      label: "👥 طلابي" },
-                        { id: "earnings",      label: "الأرباح" },
+                        { id: "overview", label: "نظرة عامة" },
+                        { id: "courses", label: "كورساتي" },
+                        { id: "students", label: "👥 طلابي" },
+                        { id: "earnings", label: "الأرباح" },
                         { id: "notifications", label: `🔔 الإشعارات${unreadCount > 0 ? ` (${unreadCount})` : ""}` },
                     ].map(t => (
                         <button
@@ -265,7 +284,6 @@ export default function InstructorDashboardClient({
                 {/* Tab: Students */}
                 {activeTab === "students" && (
                     <div className={"InstructorDashboard-coursesList"}>
-                        {/* اختيار الكورس */}
                         <div style={{ marginBottom: "16px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
                             {courses.map(c => (
                                 <button
@@ -288,7 +306,6 @@ export default function InstructorDashboardClient({
                             ))}
                         </div>
 
-                        {/* جدول الطلاب */}
                         {studentsLoaded && (
                             students.length === 0 ? (
                                 <div className={"InstructorDashboard-empty"}>
@@ -305,33 +322,41 @@ export default function InstructorDashboardClient({
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {students.map(s => (
-                                            <tr key={s.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                                                <td style={{ padding: "12px", color: "#fff", fontWeight: 700 }}>
-                                                    {s.profiles?.name ?? "طالب"}
-                                                </td>
-                                                <td style={{ padding: "12px", color: "#10B981" }}>
-                                                    {s.progress ?? 0}%
-                                                </td>
-                                                <td style={{ padding: "12px" }}>
-                                                    <button
-                                                        onClick={() => removeStudent(s.profiles?.id, selectedCourseStudents)}
-                                                        style={{
-                                                            background: "rgba(239,68,68,0.15)",
-                                                            color: "#EF4444",
-                                                            border: "1px solid rgba(239,68,68,0.3)",
-                                                            borderRadius: "6px",
-                                                            padding: "4px 12px",
-                                                            cursor: "pointer",
-                                                            fontSize: "13px",
-                                                            fontWeight: 700,
-                                                        }}
-                                                    >
-                                                        🗑️ إلغاء الاشتراك
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                        {students.map(s => {
+                                            console.log("student record:", s);
+                                            return (
+                                                <tr key={s.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                                                    <td style={{ padding: "12px", color: "#fff", fontWeight: 700 }}>
+                                                        {s.profiles?.name ?? "طالب"}
+                                                    </td>
+                                                    <td style={{ padding: "12px", color: "#10B981" }}>
+                                                        {s.progress ?? 0}%
+                                                    </td>
+                                                    <td style={{ padding: "12px" }}>
+                                                        <button
+                                                            onClick={() => {
+                                                                console.log("=== ضغط الزرار ===");
+                                                                console.log("s.user_id:", s.user_id);
+                                                                console.log("selectedCourseStudents:", selectedCourseStudents);
+                                                                removeStudent(s.user_id, selectedCourseStudents);
+                                                            }}
+                                                            style={{
+                                                                background: "rgba(239,68,68,0.15)",
+                                                                color: "#EF4444",
+                                                                border: "1px solid rgba(239,68,68,0.3)",
+                                                                borderRadius: "6px",
+                                                                padding: "4px 12px",
+                                                                cursor: "pointer",
+                                                                fontSize: "13px",
+                                                                fontWeight: 700,
+                                                            }}
+                                                        >
+                                                            🗑️ إلغاء الاشتراك
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             )

@@ -150,7 +150,6 @@ export default function CoursePlayerClient({
                                     </span>
                                 </div>
 
-                             // في الـ map على الدروس في السيدبار
                                 {sec.lessons?.map((lesson) => {
                                     const globalIdx = allLessons.findIndex(l => String(l.id) === String(lesson.id));
                                     const lessonLocked = globalIdx >= 3 && !enrollment;
@@ -159,10 +158,13 @@ export default function CoursePlayerClient({
                                         <div
                                             key={lesson.id}
                                             className={`${"CoursePlayer-lessonRow"} 
-                ${lesson.id === currentLesson?.id ? "CoursePlayer-lessonActive" : ""} 
-                ${completed.has(lesson.id) ? "CoursePlayer-lessonDone" : ""}`}
+                                                ${lesson.id === currentLesson?.id ? "CoursePlayer-lessonActive" : ""} 
+                                                ${completed.has(lesson.id) ? "CoursePlayer-lessonDone" : ""}`}
                                             onClick={() => !lessonLocked && goToLesson(lesson)}
-                                            style={{ cursor: lessonLocked ? "not-allowed" : "pointer", opacity: lessonLocked ? 0.5 : 1 }}
+                                            style={{
+                                                cursor: lessonLocked ? "not-allowed" : "pointer",
+                                                opacity: lessonLocked ? 0.5 : 1
+                                            }}
                                         >
                                             <span className={"CoursePlayer-lessonCheck"}>
                                                 {lessonLocked ? "🔒" : completed.has(lesson.id) ? "✅" : "○"}

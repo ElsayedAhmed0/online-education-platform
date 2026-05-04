@@ -9,10 +9,9 @@ export async function POST(request) {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return NextResponse.json({ error: "غير مسجل" }, { status: 401 });
 
-        // تحقق إن المدرس ده هو صاحب الكورس
         const { data: course } = await supabase
             .from("courses")
-            .select("instructor_id")
+            .select("instructor_id, title")
             .eq("id", courseId)
             .single();
 
@@ -20,18 +19,47 @@ export async function POST(request) {
             return NextResponse.json({ error: "غير مصرح" }, { status: 403 });
         }
 
-        // احذف الاشتراك
-        await supabase
+        // 1. جيب الـ lesson IDs
+        const { data: sections } = await supabase
+            .from("sections")
+            .select("lessons(id)")
+            .eq("course_id", courseId);
+
+        const lessonIds = sections?.flatMap(s => s.lessons?.map(l => l.id) ?? []) ?? [];
+
+        // 2. امسح الـ progress
+        if (lessonIds.length > 0) {
+            await supabase
+                .from("lesson_progress")
+                .delete()
+                .eq("user_id", studentId)
+                .in("lesson_id", lessonIds);
+        }
+
+        // 3. ✅ update بدل delete عشان RLS
+        const { error: updateError } = await supabase
             .from("enrollments")
-            .delete()
+            .update({
+                status: "cancelled",
+                cancelled_at: new Date().toISOString(),
+                cancelled_by: user.id,
+            })
             .eq("user_id", studentId)
             .eq("course_id", courseId);
 
-        // احذف استخدامات الكوبون
-        await supabase
-            .from("coupon_usages")
-            .delete()
-            .eq("user_id", studentId);
+        if (updateError) {
+            console.log("enrollment update error:", updateError);
+            return NextResponse.json({ error: updateError.message }, { status: 500 });
+        }
+
+        // 4. إشعار للطالب
+        await supabase.from("notifications").insert({
+            user_id: studentId,
+            type: "enrollment_cancelled",
+            title: "تم إلغاء اشتراكك",
+            body: `تم إلغاء اشتراكك في كورس "${course.title}" من قِبَل المدرس.`,
+            link: `/courses/${courseId}`,
+        });
 
         return NextResponse.json({ success: true });
 

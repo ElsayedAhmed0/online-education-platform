@@ -37,6 +37,7 @@ export default async function CourseDetailPage({ params }) {
             .select("*")
             .eq("user_id", user.id)
             .eq("course_id", id)
+            .eq("status", "active")
             .single();
         enrollment = data;
     }
