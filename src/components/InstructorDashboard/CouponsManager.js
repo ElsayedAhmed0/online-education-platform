@@ -15,7 +15,7 @@ export default function CouponsManager({ courses }) {
         code: "",
         discount: 10,
         course_id: courses[0]?.id ?? "",
-        max_uses: "",
+        course_id: courses[0]?.id ?? "",
         expires_at: "",
     });
 
@@ -51,14 +51,14 @@ export default function CouponsManager({ courses }) {
                 discount: Number(form.discount),
                 course_id: form.course_id,
                 instructor_id: user.id,
-                max_uses: form.max_uses ? Number(form.max_uses) : null,
+                max_uses: 1, // تم تثبيتها بـ 1 عشان يكون استخدام مرة واحدة بس لأي يوزر
                 expires_at: form.expires_at || null,
             });
 
             if (error) throw error;
 
             setShowForm(false);
-            setForm({ code: "", discount: 10, course_id: courses[0]?.id ?? "", max_uses: "", expires_at: "" });
+            setForm({ code: "", discount: 10, course_id: courses[0]?.id ?? "", expires_at: "" });
             fetchCoupons();
 
         } catch (err) {
@@ -135,13 +135,13 @@ export default function CouponsManager({ courses }) {
 
                     <div className="grid2">
                         <div className="field">
-                            <label>الحد الأقصى للاستخدام</label>
+                            <label>الاستخدام مسموح لمرة واحدة فقط</label>
                             <input
                                 className="input"
-                                type="number"
-                                placeholder="اتركه فاضي = غير محدود"
-                                value={form.max_uses}
-                                onChange={e => update("max_uses", e.target.value)}
+                                type="text"
+                                value="يُستخدم مرة واحدة فقط"
+                                disabled
+                                style={{ background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.5)" }}
                             />
                         </div>
                         <div className="field">
@@ -183,8 +183,7 @@ export default function CouponsManager({ courses }) {
                             <div className="couponDiscount">خصم {c.discount}%</div>
                             <div className="couponCourse">{c.courses?.title}</div>
                             <div className="couponMeta">
-                                {c.used_count ?? 0} استخدام
-                                {c.max_uses ? ` / ${c.max_uses}` : " / غير محدود"}
+                                {c.used_count ?? 0} استخدام / 1
                             </div>
                             {c.expires_at && (
                                 <div className="couponExpiry">

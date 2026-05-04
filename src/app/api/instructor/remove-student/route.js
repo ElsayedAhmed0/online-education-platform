@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { createServerSupabaseClient, createAdminClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 
 export async function POST(request) {
@@ -8,6 +8,8 @@ export async function POST(request) {
 
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return NextResponse.json({ error: "غير مسجل" }, { status: 401 });
+
+        const adminSupabase = createAdminClient();
 
         const { data: course } = await supabase
             .from("courses")
@@ -26,17 +28,17 @@ export async function POST(request) {
 
         const lessonIds = sections?.flatMap(s => s.lessons?.map(l => l.id) ?? []) ?? [];
 
-        // 2. امسح الـ progress
+        // 2. امسح الـ progress (باستخدام أدمن عشان نتخطى حماية الطالب)
         if (lessonIds.length > 0) {
-            await supabase
+            await adminSupabase
                 .from("lesson_progress")
                 .delete()
                 .eq("user_id", studentId)
                 .in("lesson_id", lessonIds);
         }
 
-        // 3. update الـ enrollment
-        const { error: updateError } = await supabase
+        // 3. update الـ enrollment (أدمن)
+        const { error: updateError } = await adminSupabase
             .from("enrollments")
             .update({
                 status: "cancelled",
@@ -49,7 +51,7 @@ export async function POST(request) {
         if (updateError)
             return NextResponse.json({ error: updateError.message }, { status: 500 });
 
-        // 4. امسح coupon_usages الخاصة بكوبونات الكورس ده
+        // 4. امسح coupon_usages الخاصة بكوبونات الكورس ده (أدمن)
         const { data: courseCoupons } = await supabase
             .from("coupons")
             .select("id")
@@ -58,18 +60,18 @@ export async function POST(request) {
         const couponIds = courseCoupons?.map(c => c.id) ?? [];
 
         if (couponIds.length > 0) {
-            await supabase
+            await adminSupabase
                 .from("coupon_usages")
                 .delete()
                 .eq("user_id", studentId)
                 .in("coupon_id", couponIds);
         }
 
-        // 5. إشعار للطالب
-        await supabase.from("notifications").insert({
+        // 5. إشعار للطالب (أدمن)
+        await adminSupabase.from("notifications").insert({
             user_id: studentId,
             type: "enrollment_cancelled",
-            title: "تم إلغاء اشتراكك",
+            title: "تم إلغاء اشتراكك ❌",
             body: `تم إلغاء اشتراكك في كورس "${course.title}" من قِبَل المدرس.`,
             link: `/courses/${courseId}`,
         });

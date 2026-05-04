@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { createServerSupabaseClient, createAdminClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 
@@ -12,6 +12,8 @@ export async function POST(request) {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return NextResponse.json({ error: "غير مسجل" }, { status: 401 });
 
+        const adminSupabase = createAdminClient();
+
         const { data: course } = await supabase
             .from("courses")
             .select("*, instructor_id")
@@ -23,33 +25,44 @@ export async function POST(request) {
         let price = course.price;
 
         if (couponId) {
-            const { data: existingUsage } = await supabase
-                .from("coupon_usages")
-                .select("id")
-                .eq("coupon_id", couponId)
-                .eq("user_id", user.id)
-                .single();
-
-            if (existingUsage)
-                return NextResponse.json({ error: "الكوبون استُخدم من قبل" }, { status: 400 });
-
             const { data: coupon } = await supabase
                 .from("coupons")
-                .select("discount")
+                .select("discount, used_count")
                 .eq("id", couponId)
                 .single();
 
-            if (coupon)
-                price = Math.round(course.price * (1 - coupon.discount / 100));
+            if (!coupon || coupon.used_count >= 1)
+                return NextResponse.json({ error: "الكوبون غير صالح أو تم استخدامه مسبقاً" }, { status: 400 });
 
-            await supabase
+            // نستخدم الأدمن عشان الـ RLS بيمنع الطالب العادي إنه يقرأ استخدامات غيره
+            const { count: usagesCount } = await adminSupabase
+                .from("coupon_usages")
+                .select("*", { count: "exact", head: true })
+                .eq("coupon_id", couponId);
+
+            if (usagesCount && usagesCount >= 1)
+                return NextResponse.json({ error: "تم استنفاد الكوبون من قبل شخص آخر" }, { status: 400 });
+
+            price = Math.round(course.price * (1 - coupon.discount / 100));
+
+            // تسجيل الاستخدام
+            await adminSupabase
                 .from("coupon_usages")
                 .insert({ coupon_id: couponId, user_id: user.id });
 
-            await supabase
+            // تحديث الكوبون باستخدام الأدمن عشان ميفشلش بسبب الـ RLS
+            await adminSupabase
                 .from("coupons")
-                .update({ used_count: (course.used_count || 0) + 1 })
+                .update({ used_count: (coupon.used_count || 0) + 1 })
                 .eq("id", couponId);
+        }
+
+        // لو السعر لسه أكبر من صفر، يعني معندوش كوبون أو الكوبون مش 100%
+        // وبما إن مفيش بوابة دفع، نرفض الاشتراك
+        if (price > 0) {
+            return NextResponse.json({ 
+                error: "يرجى إدخال كود خصم صالح. الكورس غير مجاني والدفع الإلكتروني غير متاح حالياً." 
+            }, { status: 400 });
         }
 
         const { data: studentProfile } = await supabase
@@ -73,8 +86,9 @@ export async function POST(request) {
 
         if (enrollError) throw enrollError;
 
+        // العمليات اللي بتحتاج صلاحيات Admin عشان متفشلش بسبب RLS الطالب
         if (instructorAmount > 0) {
-            await supabase.from("transactions").insert({
+            await adminSupabase.from("transactions").insert({
                 user_id: course.instructor_id,
                 course_id: courseId,
                 amount: instructorAmount,
@@ -83,12 +97,12 @@ export async function POST(request) {
             });
         }
 
-        await supabase
+        await adminSupabase
             .from("courses")
             .update({ students_count: (course.students_count ?? 0) + 1 })
             .eq("id", courseId);
 
-        await supabase.from("notifications").insert({
+        await adminSupabase.from("notifications").insert({
             user_id: course.instructor_id,
             type: "enrollment",
             title: "طالب جديد سجّل في كورسك 🎉",
@@ -96,7 +110,7 @@ export async function POST(request) {
             link: "/instructor/dashboard",
         });
 
-        await supabase.from("notifications").insert({
+        await adminSupabase.from("notifications").insert({
             user_id: user.id,
             type: "new_lesson",
             title: `تم تسجيلك في "${course.title}" ✅`,

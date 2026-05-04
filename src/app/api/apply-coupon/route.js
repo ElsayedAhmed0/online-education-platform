@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { createServerSupabaseClient, createAdminClient } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 
 export async function POST(request) {
@@ -8,6 +8,8 @@ export async function POST(request) {
 
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return NextResponse.json({ error: "غير مسجل" }, { status: 401 });
+
+        const adminSupabase = createAdminClient();
 
         // جيب الكوبون
         const { data: coupon, error } = await supabase
@@ -24,19 +26,17 @@ export async function POST(request) {
         if (coupon.expires_at && new Date(coupon.expires_at) < new Date())
             return NextResponse.json({ error: "كود الخصم منتهي الصلاحية" }, { status: 400 });
 
-        if (coupon.max_uses && coupon.used_count >= coupon.max_uses)
-            return NextResponse.json({ error: "تم استنفاد هذا الكود" }, { status: 400 });
+        if (coupon.used_count >= 1)
+            return NextResponse.json({ error: "تم استنفاد هذا الكود (يُستخدم مرة واحدة فقط)" }, { status: 400 });
 
-        // ✅ بس نتحقق مش نسجل — التسجيل هيبقى في enroll
-        const { data: existingUsage } = await supabase
+        // نتحقق من جدول coupon_usages كمان عشان لو الـ RLS منع التحديث في جدول الكوبونات
+        const { count: usagesCount } = await adminSupabase
             .from("coupon_usages")
-            .select("id")
-            .eq("coupon_id", coupon.id)
-            .eq("user_id", user.id)
-            .single();
+            .select("*", { count: "exact", head: true })
+            .eq("coupon_id", coupon.id);
 
-        if (existingUsage)
-            return NextResponse.json({ error: "استخدمت هذا الكود من قبل" }, { status: 400 });
+        if (usagesCount && usagesCount >= 1)
+            return NextResponse.json({ error: "تم استنفاد هذا الكود من قبل شخص آخر" }, { status: 400 });
 
         // ✅ رجّع البيانات بس من غير ما تسجل استخدام
         return NextResponse.json({

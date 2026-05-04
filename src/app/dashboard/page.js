@@ -15,11 +15,12 @@ export default async function DashboardPage() {
         .eq("id", user.id)
         .single();
 
-    // جيب الكورسات المسجل فيها
+    // جيب الكورسات المسجل فيها اللي حالتها active بس
     const { data: enrollments } = await supabase
         .from("enrollments")
         .select("*, courses(*, profiles(name))")
         .eq("user_id", user.id)
+        .eq("status", "active")
         .order("enrolled_at", { ascending: false });
 
     return (
