@@ -25,6 +25,7 @@ export default function CoursePlayerClient({
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [completed, setCompleted] = useState(completedIds);
     const [enrollProgress, setEnrollProgress] = useState(enrollment?.progress || 0);
+    const [showLockModal, setShowLockModal] = useState(false);
 
     const currentIndex = allLessons.findIndex(l => String(l.id) === String(lessonId));
     const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
@@ -160,7 +161,13 @@ export default function CoursePlayerClient({
                                             className={`${"CoursePlayer-lessonRow"} 
                                                 ${lesson.id === currentLesson?.id ? "CoursePlayer-lessonActive" : ""} 
                                                 ${completed.has(lesson.id) ? "CoursePlayer-lessonDone" : ""}`}
-                                            onClick={() => !lessonLocked && goToLesson(lesson)}
+                                            onClick={() => {
+                                                if (lessonLocked) {
+                                                    setShowLockModal(true);
+                                                    return;
+                                                }
+                                                goToLesson(lesson);
+                                            }}
                                             style={{
                                                 cursor: lessonLocked ? "not-allowed" : "pointer",
                                                 opacity: lessonLocked ? 0.5 : 1
@@ -190,6 +197,47 @@ export default function CoursePlayerClient({
                     </div>
                 </div>
             </div>
+
+            {/* Lock Modal */}
+            {showLockModal && (
+                <div style={{
+                    position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    zIndex: 1000,
+                }}>
+                    <div style={{
+                        background: "#1e1b4b", borderRadius: "16px", padding: "32px",
+                        textAlign: "center", maxWidth: "360px", width: "90%",
+                        border: "1px solid rgba(129,140,248,0.3)",
+                    }}>
+                        <div style={{ fontSize: "48px", marginBottom: "16px" }}>🔒</div>
+                        <h2 style={{ color: "#fff", marginBottom: "8px" }}>الدرس مقفول</h2>
+                        <p style={{ color: "rgba(255,255,255,0.6)", marginBottom: "24px" }}>
+                            اشترك في الكورس للوصول لجميع الدروس
+                        </p>
+                        <button
+                           onClick={() => router.push(`/checkout/${course.id}`)}
+                            style={{
+                                background: "#818CF8", color: "#fff", border: "none",
+                                borderRadius: "8px", padding: "12px 24px", cursor: "pointer",
+                                fontSize: "15px", fontWeight: 700, width: "100%",
+                                marginBottom: "8px",
+                            }}
+                        >
+                            🎓 اشترك الآن
+                        </button>
+                        <button
+                            onClick={() => setShowLockModal(false)}
+                            style={{
+                                background: "transparent", color: "rgba(255,255,255,0.5)",
+                                border: "none", cursor: "pointer", fontSize: "14px",
+                            }}
+                        >
+                            إغلاق
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

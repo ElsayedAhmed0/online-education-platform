@@ -17,20 +17,17 @@ export async function POST(request) {
             .eq("course_id", courseId)
             .single();
 
-        if (error || !coupon) {
+        if (error || !coupon)
             return NextResponse.json({ error: "كود الخصم غير صحيح" }, { status: 400 });
-        }
 
         // تحقق من الصلاحية
-        if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
+        if (coupon.expires_at && new Date(coupon.expires_at) < new Date())
             return NextResponse.json({ error: "كود الخصم منتهي الصلاحية" }, { status: 400 });
-        }
 
-        if (coupon.max_uses && coupon.used_count >= coupon.max_uses) {
+        if (coupon.max_uses && coupon.used_count >= coupon.max_uses)
             return NextResponse.json({ error: "تم استنفاد هذا الكود" }, { status: 400 });
-        }
 
-        // تحقق إن المستخدم ده مستخدمش الكوبون قبل كده
+        // ✅ بس نتحقق مش نسجل — التسجيل هيبقى في enroll
         const { data: existingUsage } = await supabase
             .from("coupon_usages")
             .select("id")
@@ -38,26 +35,10 @@ export async function POST(request) {
             .eq("user_id", user.id)
             .single();
 
-        if (existingUsage) {
+        if (existingUsage)
             return NextResponse.json({ error: "استخدمت هذا الكود من قبل" }, { status: 400 });
-        }
 
-        // سجّل الاستخدام
-        const { error: usageError } = await supabase
-            .from("coupon_usages")
-            .insert({ coupon_id: coupon.id, user_id: user.id });
-
-        if (usageError) {
-            // لو حصل UNIQUE violation يبقى اتستخدم في نفس اللحظة
-            return NextResponse.json({ error: "استخدمت هذا الكود من قبل" }, { status: 400 });
-        }
-
-        // حدّث العداد
-        await supabase
-            .from("coupons")
-            .update({ used_count: (coupon.used_count || 0) + 1 })
-            .eq("id", coupon.id);
-
+        // ✅ رجّع البيانات بس من غير ما تسجل استخدام
         return NextResponse.json({
             success: true,
             discount: coupon.discount,

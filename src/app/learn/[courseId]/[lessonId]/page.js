@@ -17,7 +17,10 @@ export default async function CoursePlayerPage({ params }) {
         .eq("course_id", courseId)
         .order("order_index");
 
-    // تحقق من الاشتراك
+    const allLessons = (sections ?? []).flatMap(s => s.lessons ?? []);
+    const lessonIndex = allLessons.findIndex(l => String(l.id) === String(lessonId));
+
+    // تحقق من الاشتراك الـ active بس
     const { data: enrollment } = await supabase
         .from("enrollments")
         .select("*")
@@ -26,12 +29,12 @@ export default async function CoursePlayerPage({ params }) {
         .eq("status", "active")
         .single();
 
-    // ✅ لو مش مشترك (أو اتلغي اشتراكه) — روح صفحة الكورس فوراً
-    if (!enrollment) {
+    // ✅ مشترك active → كل الدروس مفتوحة
+    // ✅ مش مشترك أو cancelled → أول 3 دروس بس مجاناً
+    if (!enrollment && lessonIndex >= 3) {
         redirect(`/courses/${courseId}`);
     }
 
-    // جيب الكورس
     const { data: course } = await supabase
         .from("courses")
         .select("*, profiles(name)")
@@ -40,7 +43,6 @@ export default async function CoursePlayerPage({ params }) {
 
     if (!course) notFound();
 
-    // جيب الـ progress - هيبقى فاضي بعد الإلغاء لأننا مسحناه في الـ API
     const { data: prog } = await supabase
         .from("lesson_progress")
         .select("lesson_id, completed")

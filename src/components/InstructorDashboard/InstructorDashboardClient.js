@@ -50,44 +50,45 @@ export default function InstructorDashboardClient({
         const { data } = await supabase
             .from("enrollments")
             .select("*, profiles(id, name)")
-            .eq("course_id", courseId);
+            .eq("course_id", courseId)
+            .eq("status", "active");
         setStudents(data ?? []);
         setStudentsLoaded(true);
     };
 
     const removeStudent = async (studentId, courseId) => {
-    // شيل الـ confirm مؤقتاً
-    // const confirmed = window.confirm("هتلغي اشتراك الطالب ده؟");
-    // if (!confirmed) return;
+        // شيل الـ confirm مؤقتاً
+        // const confirmed = window.confirm("هتلغي اشتراك الطالب ده؟");
+        // if (!confirmed) return;
 
-    console.log("=== بدأ الإلغاء ===");
-    console.log("studentId:", studentId);
-    console.log("courseId:", courseId);
+        console.log("=== بدأ الإلغاء ===");
+        console.log("studentId:", studentId);
+        console.log("courseId:", courseId);
 
-    try {
-        const res = await fetch("/api/instructor/remove-student", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ studentId, courseId }),
-        });
+        try {
+            const res = await fetch("/api/instructor/remove-student", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ studentId, courseId }),
+            });
 
-        console.log("HTTP Status:", res.status);
-        const data = await res.json();
-        console.log("Response:", data);
+            console.log("HTTP Status:", res.status);
+            const data = await res.json();
+            console.log("Response:", data);
 
-        if (!res.ok) { 
-            alert("❌ خطأ: " + data.error); 
-            return; 
+            if (!res.ok) {
+                alert("❌ خطأ: " + data.error);
+                return;
+            }
+
+            alert("✅ تم الإلغاء");
+            await fetchStudents(courseId);
+
+        } catch (err) {
+            console.log("❌ Fetch error:", err.message);
+            alert("❌ مشكلة: " + err.message);
         }
-
-        alert("✅ تم الإلغاء");
-        await fetchStudents(courseId);
-
-    } catch (err) {
-        console.log("❌ Fetch error:", err.message);
-        alert("❌ مشكلة: " + err.message);
-    }
-};
+    };
 
     const avgRating = courses.length > 0
         ? (courses.reduce((sum, c) => sum + (c.rating ?? 0), 0) / courses.length).toFixed(1)

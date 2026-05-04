@@ -24,6 +24,7 @@ export default async function CheckoutPage({ params, searchParams }) {
         .select("id")
         .eq("user_id", user.id)
         .eq("course_id", courseId)
+        .eq("status", "active")
         .single();
 
     if (enrolled) {
