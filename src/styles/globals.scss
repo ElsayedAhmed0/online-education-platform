@@ -7668,3 +7668,853 @@ body {
         color: var(--primary);
     }
 }
+
+/* ══════════════════════════════════════════
+   Instructors Page
+══════════════════════════════════════════ */
+
+.InstructorsPage-page {
+    min-height: 100vh;
+    background: var(--bg-page);
+    font-family: var(--font);
+    direction: rtl;
+}
+
+/* ── Hero ── */
+.InstructorsPage-hero {
+    position: relative;
+    padding: 100px 24px 70px;
+    overflow: hidden;
+    text-align: center;
+}
+
+.InstructorsPage-heroBg {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99,102,241,.28) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 80% 50%, rgba(139,92,246,.18) 0%, transparent 60%);
+    pointer-events: none;
+}
+
+.InstructorsPage-heroContent {
+    position: relative;
+    z-index: 1;
+    max-width: 680px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.InstructorsPage-heroTag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(99,102,241,.15);
+    border: 1px solid rgba(99,102,241,.3);
+    color: var(--primary-light);
+    padding: 6px 16px;
+    border-radius: var(--radius-full);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.InstructorsPage-heroTitle {
+    font-size: 44px;
+    font-weight: 900;
+    color: var(--text-primary);
+    line-height: 1.2;
+
+    span {
+        background: linear-gradient(135deg, var(--primary-light), var(--secondary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+}
+
+.InstructorsPage-heroDesc {
+    font-size: 16px;
+    color: var(--text-secondary);
+    line-height: 1.8;
+    max-width: 500px;
+}
+
+/* ── Search ── */
+.InstructorsPage-searchWrap {
+    position: relative;
+    width: 100%;
+    max-width: 460px;
+    margin-top: 8px;
+}
+
+.InstructorsPage-searchIcon {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+    opacity: .6;
+}
+
+.InstructorsPage-searchInput {
+    width: 100%;
+    padding: 14px 46px 14px 46px;
+    background: rgba(255,255,255,.06);
+    border: 1.5px solid var(--border-strong);
+    border-radius: var(--radius-full);
+    color: var(--text-primary);
+    font-family: var(--font);
+    font-size: 14px;
+    outline: none;
+    transition: border-color .2s, background .2s;
+    text-align: right;
+
+    &:focus {
+        border-color: var(--primary);
+        background: rgba(99,102,241,.08);
+    }
+
+    &::placeholder {
+        color: var(--text-hint);
+    }
+}
+
+.InstructorsPage-searchClear {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    transition: color .15s;
+
+    &:hover { color: var(--text-primary); }
+}
+
+/* ── Container ── */
+.InstructorsPage-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+}
+
+/* ── Stats bar ── */
+.InstructorsPage-statsBar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 20px 40px;
+    margin-bottom: 40px;
+}
+
+.InstructorsPage-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.InstructorsPage-statNum {
+    font-size: 28px;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--primary-light), var(--secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.InstructorsPage-statLabel {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.InstructorsPage-statDivider {
+    width: 1px;
+    height: 40px;
+    background: var(--border);
+}
+
+.InstructorsPage-resultsLabel {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+/* ── Grid ── */
+.InstructorsPage-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 24px;
+}
+
+/* ── Empty ── */
+.InstructorsPage-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 80px 20px;
+    color: var(--text-muted);
+
+    span { font-size: 48px; opacity: .4; }
+    p { font-size: 15px; font-weight: 600; }
+}
+
+.InstructorsPage-emptyBtn {
+    margin-top: 4px;
+    padding: 10px 24px;
+    background: rgba(99,102,241,.15);
+    border: 1px solid rgba(99,102,241,.3);
+    border-radius: var(--radius-full);
+    color: var(--primary-light);
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .2s;
+
+    &:hover {
+        background: rgba(99,102,241,.25);
+    }
+}
+
+/* ══════════════════════════════════════════
+   Instructor Card
+══════════════════════════════════════════ */
+
+.InstructorCard-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 32px 24px 24px;
+    text-decoration: none;
+    transition: transform .25s, box-shadow .25s, border-color .25s;
+    overflow: hidden;
+    text-align: center;
+
+    &:hover {
+        transform: translateY(-6px);
+        border-color: rgba(99,102,241,.35);
+        box-shadow: 0 16px 40px rgba(99,102,241,.2);
+
+        .InstructorCard-glow {
+            opacity: 1;
+        }
+
+        .InstructorCard-ctaArrow {
+            transform: translateX(-4px);
+        }
+    }
+}
+
+.InstructorCard-glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(99,102,241,.12) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity .3s;
+    pointer-events: none;
+}
+
+/* Avatar */
+.InstructorCard-avatarWrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.InstructorCard-avatar {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid rgba(99,102,241,.3);
+    display: block;
+}
+
+.InstructorCard-avatarFallback {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: 900;
+    color: #fff;
+    border: 3px solid rgba(99,102,241,.3);
+}
+
+.InstructorCard-onlineDot {
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--success);
+    border: 2px solid var(--bg-card);
+    box-shadow: 0 0 6px var(--success);
+}
+
+/* Info */
+.InstructorCard-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+}
+
+.InstructorCard-name {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.InstructorCard-spec {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 12px;
+    background: rgba(99,102,241,.12);
+    border: 1px solid rgba(99,102,241,.25);
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--primary-light);
+}
+
+.InstructorCard-bio {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Stats */
+.InstructorCard-stats {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 20px;
+    width: 100%;
+}
+
+.InstructorCard-statItem {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex: 1;
+    justify-content: center;
+}
+
+.InstructorCard-statIcon { font-size: 14px; }
+
+.InstructorCard-statVal {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.InstructorCard-statLbl {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.InstructorCard-statDivider {
+    width: 1px;
+    height: 24px;
+    background: var(--border);
+}
+
+/* CTA */
+.InstructorCard-cta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary-light);
+    transition: gap .2s;
+
+    .InstructorCard-wrap:hover & {
+        gap: 10px;
+    }
+}
+
+.InstructorCard-ctaArrow {
+    transition: transform .2s;
+    display: inline-block;
+}
+
+/* ══════════════════════════════════════════
+   Instructor Profile Page
+══════════════════════════════════════════ */
+
+.InstructorProfile-page {
+    min-height: 100vh;
+    background: var(--bg-page);
+    font-family: var(--font);
+    direction: rtl;
+}
+
+/* ── Banner ── */
+.InstructorProfile-banner {
+    position: relative;
+    padding: 100px 24px 60px;
+    overflow: hidden;
+}
+
+.InstructorProfile-bannerBg {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 70% 60% at 30% 50%, rgba(99,102,241,.25) 0%, transparent 65%),
+        radial-gradient(ellipse 50% 50% at 80% 30%, rgba(139,92,246,.2) 0%, transparent 60%);
+    pointer-events: none;
+}
+
+.InstructorProfile-bannerContent {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.InstructorProfile-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color .15s;
+    width: fit-content;
+
+    &:hover { color: var(--primary-light); }
+}
+
+.InstructorProfile-heroCard {
+    display: flex;
+    align-items: flex-start;
+    gap: 32px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-xl);
+    padding: 32px 36px;
+    backdrop-filter: blur(12px);
+}
+
+/* Avatar */
+.InstructorProfile-avatarWrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.InstructorProfile-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid rgba(99,102,241,.4);
+    display: block;
+    box-shadow: 0 0 30px rgba(99,102,241,.3);
+}
+
+.InstructorProfile-avatarFallback {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    font-weight: 900;
+    color: #fff;
+    border: 4px solid rgba(99,102,241,.4);
+    box-shadow: 0 0 30px rgba(99,102,241,.3);
+}
+
+.InstructorProfile-avatarBadge {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    border: 2px solid var(--bg-page);
+}
+
+/* Details */
+.InstructorProfile-heroDetails {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.InstructorProfile-name {
+    font-size: 32px;
+    font-weight: 900;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+.InstructorProfile-spec {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(99,102,241,.12);
+    border: 1px solid rgba(99,102,241,.25);
+    border-radius: var(--radius-full);
+    padding: 5px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary-light);
+    width: fit-content;
+}
+
+.InstructorProfile-bio {
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.8;
+    max-width: 560px;
+}
+
+.InstructorProfile-metaRow {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.InstructorProfile-metaItem {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+/* ── Stats Strip ── */
+.InstructorProfile-statsStrip {
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+
+.InstructorProfile-stripInner {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+}
+
+.InstructorProfile-stripStat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 20px 0;
+}
+
+.InstructorProfile-stripNum {
+    font-size: 26px;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--primary-light), var(--secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.InstructorProfile-stripLabel {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.InstructorProfile-stripDivider {
+    width: 1px;
+    height: 40px;
+    background: var(--border);
+    flex-shrink: 0;
+}
+
+/* ── Container ── */
+.InstructorProfile-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+}
+
+.InstructorProfile-sectionTitle {
+    font-size: 20px;
+    font-weight: 900;
+    color: var(--text-primary);
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.InstructorProfile-sectionCount {
+    background: rgba(99,102,241,.15);
+    border: 1px solid rgba(99,102,241,.25);
+    color: var(--primary-light);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: var(--radius-full);
+}
+
+/* ── Courses Grid ── */
+.InstructorProfile-coursesGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 22px;
+}
+
+/* ── No Courses ── */
+.InstructorProfile-noCourses {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 80px 20px;
+    color: var(--text-muted);
+
+    span { font-size: 48px; opacity: .4; }
+    p { font-size: 15px; font-weight: 600; }
+}
+
+/* ══════════════════════════════════════════
+   Instructor Course Card
+══════════════════════════════════════════ */
+
+.InstructorCourseCard-wrap {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    text-decoration: none;
+    transition: transform .25s, box-shadow .25s, border-color .25s;
+
+    &:hover {
+        transform: translateY(-5px);
+        border-color: rgba(99,102,241,.3);
+        box-shadow: 0 14px 36px rgba(99,102,241,.18);
+
+        .InstructorCourseCard-thumbOverlay {
+            opacity: 1;
+        }
+    }
+}
+
+/* Thumb */
+.InstructorCourseCard-thumb {
+    position: relative;
+    height: 170px;
+    overflow: hidden;
+    background: rgba(99,102,241,.08);
+
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        transition: transform .4s;
+
+        .InstructorCourseCard-wrap:hover & {
+            transform: scale(1.05);
+        }
+    }
+}
+
+.InstructorCourseCard-thumbFallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 52px;
+    opacity: .3;
+}
+
+.InstructorCourseCard-thumbOverlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(99,102,241,.25), transparent);
+    opacity: 0;
+    transition: opacity .3s;
+}
+
+.InstructorCourseCard-level {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+/* Body */
+.InstructorCourseCard-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 18px;
+    flex: 1;
+}
+
+.InstructorCourseCard-category {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--primary-light);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.InstructorCourseCard-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.InstructorCourseCard-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Meta */
+.InstructorCourseCard-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: 6px;
+}
+
+.InstructorCourseCard-rating {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.CourseCard-stars {
+    color: var(--accent);
+    font-size: 12px;
+    letter-spacing: 1px;
+}
+
+.InstructorCourseCard-ratingNum {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+.InstructorCourseCard-reviews {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.InstructorCourseCard-students {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+/* Footer */
+.InstructorCourseCard-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+}
+
+.InstructorCourseCard-price {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.InstructorCourseCard-priceOld {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-decoration: line-through;
+}
+
+.InstructorCourseCard-priceNew {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--success);
+}
+
+.InstructorCourseCard-free {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--success);
+    background: rgba(16,185,129,.12);
+    border: 1px solid rgba(16,185,129,.25);
+    padding: 2px 10px;
+    border-radius: var(--radius-full);
+}
+
+.InstructorCourseCard-cta {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--primary-light);
+    transition: color .15s;
+
+    .InstructorCourseCard-wrap:hover & {
+        color: var(--primary);
+    }
+}
