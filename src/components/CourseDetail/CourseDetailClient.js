@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
+import ReviewForm from "./ReviewForm";
 
 const LEVELS = {
     beginner: "مبتدئ",
@@ -9,7 +10,7 @@ const LEVELS = {
     advanced: "متقدم",
 };
 
-export default function CourseDetailClient({ course, sections, reviews, enrollment }) {
+export default function CourseDetailClient({ course, sections, reviews, enrollment, isAdmin }) {
     const router = useRouter();
     const supabase = createClient();
 
@@ -235,7 +236,7 @@ export default function CourseDetailClient({ course, sections, reviews, enrollme
                     )}
                 </div>
 
-                {reviews.length > 0 && (
+                {reviews.length > 0 ? (
                     <div className={"CourseDetail-section"}>
                         <h2 className={"CourseDetail-sectionTitle"}>تقييمات الطلاب</h2>
                         {reviews.map(r => (
@@ -248,6 +249,21 @@ export default function CourseDetailClient({ course, sections, reviews, enrollme
                                 </div>
                             </div>
                         ))}
+                    </div>
+                ) : (
+                    <div className={"CourseDetail-section"}>
+                        <h2 className={"CourseDetail-sectionTitle"}>تقييمات الطلاب</h2>
+                        <p style={{ color: "rgba(255,255,255,0.6)", marginBottom: "20px" }}>لا توجد تقييمات حتى الآن. كن أول من يقيّم الكورس!</p>
+                    </div>
+                )}
+                
+                {(enrollment || isAdmin) && (
+                    <div className={"CourseDetail-section"} style={{ marginTop: "40px" }}>
+                        <ReviewForm 
+                            targetType="course" 
+                            targetId={course.id} 
+                            onSuccess={() => router.refresh()} 
+                        />
                     </div>
                 )}
             </div>

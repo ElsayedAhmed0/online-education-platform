@@ -19,14 +19,19 @@ const STATUS_STYLE = {
 };
 
 export default function AdminDashboardClient({
-  profile, users, courses: initialCourses, transactions, totalRevenue, siteSettings
+  profile, users, courses: initialCourses, transactions, totalRevenue, siteSettings, platformReviews: initialPlatformReviews
 }) {
   const router = useRouter();
   const supabase = createClient();
   const [activeTab, setActiveTab] = useState("overview");
   const [userId, setUserId] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [courses, setCourses] = useState(initialCourses); // ✅ courses في state
+  const [courses, setCourses] = useState(initialCourses);
+  const [platformReviews, setPlatformReviews] = useState(initialPlatformReviews || []);
+  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const pendingReviews = platformReviews.filter(r => r.status === "pending");
 
   // ✅ دالة تجيب الكورسات من Supabase
   const fetchCourses = async () => {
@@ -51,6 +56,27 @@ export default function AdminDashboardClient({
     });
   }, []);
 
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !userId) return;
+    setUploadingAvatar(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `avatars/${userId}.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from("eduplatform").upload(path, file, { upsert: true });
+      if (uploadErr) throw uploadErr;
+      const { data } = supabase.storage.from("eduplatform").getPublicUrl(path);
+      const url = data.publicUrl + `?t=${Date.now()}`;
+      await supabase.from("profiles").update({ avatar_url: url }).eq("id", userId);
+      setAvatarUrl(url);
+    } catch (err) {
+      alert("خطأ في رفع الصورة: " + err.message);
+    } finally {
+      setUploadingAvatar(false);
+      e.target.value = "";
+    }
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/");
@@ -74,57 +100,61 @@ export default function AdminDashboardClient({
       alert("حصل خطأ: " + err.message);
     }
   };
-  const [enrollments, setEnrollments] = useState([]);
-  const [enrollmentsLoaded, setEnrollmentsLoaded] = useState(false);
-  const fetchEnrollments = async () => {
-    const { data } = await supabase
-      .from("enrollments")
-      .select("user_id, course_id")
-    setEnrollments(data ?? []);
-    setEnrollmentsLoaded(true);
+
+  const updateReviewStatus = async (reviewId, newStatus) => {
+    try {
+      const res = await fetch("/api/admin/review-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviewId, status: newStatus }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      // Update local state immediately
+      setPlatformReviews(prev => prev.map(r => r.id === reviewId ? { ...r, status: newStatus } : r));
+    } catch (err) {
+      alert("حصل خطأ: " + err.message);
+    }
   };
+
   const totalStudents = users.filter(u => u.role === "student").length;
   const totalInstructors = users.filter(u => u.role === "instructor").length;
   const pendingCourses = courses.filter(c => c.status === "review"); // ✅ من الـ state
-  const clearAllEnrollments = async () => {
-    const confirmed = window.confirm("⚠️ هتحذف كل الاشتراكات في المنصة!\nهل أنت متأكد؟");
-    if (!confirmed) return;
-
-    try {
-      const res = await fetch("/api/admin/clear-enrollments", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setEnrollments([]);
-      alert("✅ تم حذف كل الاشتراكات بنجاح");
-    } catch (err) {
-      alert("حصل خطأ: " + err.message);
-    }
-  };
-
-  const deleteUserEnrollment = async (userId) => {
-    try {
-      const { error } = await supabase
-        .from("enrollments")
-        .delete()
-        .eq("user_id", userId);
-      if (error) throw error;
-
-      // رجّع coupon_usages وعداد الكورسات
-      await supabase.from("coupon_usages").delete().eq("user_id", userId);
-      await fetchEnrollments();
-    } catch (err) {
-      alert("حصل خطأ: " + err.message);
-    }
-  };
   return (
     <div className={"AdminDashboard-page"}>
       {/* Sidebar */}
       <div className={"AdminDashboard-sidebar"}>
-        <div className={"AdminDashboard-logo"} onClick={() => router.push("/")}>
+        <div className={"AdminDashboard-logo"} onClick={() => router.push("/")} style={{ marginBottom: "8px" }}>
           <div className={"AdminDashboard-logoIconAdmin"}>🛡</div>
           <div>
             <div className={"AdminDashboard-logoName"}>EduPlatform</div>
             <div className={"AdminDashboard-adminLabel"}>Admin Panel</div>
+          </div>
+        </div>
+
+        {/* Admin Avatar */}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "12px 16px", marginBottom: "8px" }}>
+          <label
+            htmlFor="avatarUploadAdmin"
+            title={uploadingAvatar ? "جاري الرفع..." : "تغيير الصورة"}
+            style={{ position: "relative", cursor: "pointer", display: "inline-block", borderRadius: "50%", flexShrink: 0 }}
+          >
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={profile?.name} style={{ width: "42px", height: "42px", borderRadius: "50%", objectFit: "cover", border: "2px solid #EF4444", display: "block" }} />
+            ) : (
+              <div style={{ width: "42px", height: "42px", borderRadius: "50%", background: "rgba(239,68,68,.2)", border: "2px solid #EF4444", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", fontSize: "14px", color: "#EF4444" }}>
+                {(profile?.name ?? "").split(" ").map(w => w[0]).join("").slice(0, 3).toUpperCase() || "أ"}
+              </div>
+            )}
+            <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "opacity .2s", fontSize: "14px" }}
+              onMouseEnter={e => e.currentTarget.style.opacity = 1}
+              onMouseLeave={e => e.currentTarget.style.opacity = 0}
+            >{uploadingAvatar ? "⏳" : "📷"}</div>
+            <input id="avatarUploadAdmin" type="file" accept="image/*" hidden disabled={uploadingAvatar} onChange={handleAvatarUpload} />
+          </label>
+          <div>
+            <div style={{ color: "var(--text-primary)", fontWeight: 700, fontSize: "13px" }}>{profile?.name}</div>
+            <div style={{ color: "#EF4444", fontSize: "11px", fontWeight: 600 }}>🛡 Super Admin</div>
           </div>
         </div>
 
@@ -134,7 +164,7 @@ export default function AdminDashboardClient({
             { id: "users", icon: "👥", label: "المستخدمون" },
             { id: "courses", icon: "📚", label: "الكورسات" },
             { id: "finance", icon: "💰", label: "المالية" },
-            { id: "landing", icon: "🔊", label: "الصفحة الرئيسية" },
+            { id: "landing", icon: "🔊", label: "الصفحة الرئيسية", badge: pendingReviews.length },
             { id: "notifications", icon: "🔔", label: "الإشعارات", badge: unreadCount },
           ].map(item => (
             <div
@@ -191,7 +221,7 @@ export default function AdminDashboardClient({
             { id: "users", label: "المستخدمون" },
             { id: "courses", label: "الكورسات" },
             { id: "finance", label: "المالية" },
-            { id: "landing", label: "🔊 الصفحة الرئيسية" },
+            { id: "landing", label: `🔊 الصفحة الرئيسية${pendingReviews.length > 0 ? ` (${pendingReviews.length})` : ""}` },
             { id: "notifications", label: `🔔 الإشعارات${unreadCount > 0 ? ` (${unreadCount})` : ""}` },
           ].map(t => (
             <button
@@ -247,54 +277,17 @@ export default function AdminDashboardClient({
         {/* Users */}
         {activeTab === "users" && (
           <div className={"AdminDashboard-tableWrap"}>
-            <div style={{ marginBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <button
-                onClick={async () => { await fetchEnrollments(); }}
-                style={{
-                  background: "rgba(129,140,248,0.15)",
-                  color: "#818CF8",
-                  border: "1px solid rgba(129,140,248,0.3)",
-                  borderRadius: "8px",
-                  padding: "8px 18px",
-                  cursor: "pointer",
-                  fontWeight: 700,
-                  fontSize: "14px",
-                }}
-              >
-                🔄 تحميل حالة الاشتراكات
-              </button>
-
-              <button
-                onClick={clearAllEnrollments}
-                style={{
-                  background: "rgba(239,68,68,0.15)",
-                  color: "#EF4444",
-                  border: "1px solid rgba(239,68,68,0.3)",
-                  borderRadius: "8px",
-                  padding: "8px 18px",
-                  cursor: "pointer",
-                  fontWeight: 700,
-                  fontSize: "14px",
-                }}
-              >
-                🗑️ حذف كل الاشتراكات
-              </button>
-            </div>
-
             <table className={"AdminDashboard-table"}>
               <thead>
                 <tr>
                   <th>المستخدم</th>
                   <th>الدور</th>
-                  {enrollmentsLoaded && <th>الاشتراك</th>}
                   <th>تاريخ التسجيل</th>
-                  {enrollmentsLoaded && <th>إجراء</th>}
                 </tr>
               </thead>
               <tbody>
                 {users.map(u => {
                   const rs = ROLE_STYLE[u.role] ?? ROLE_STYLE.student;
-                  const isEnrolled = enrollments.some(e => e.user_id === u.id);
 
                   return (
                     <tr key={u.id}>
@@ -309,40 +302,9 @@ export default function AdminDashboardClient({
                           {rs.label}
                         </span>
                       </td>
-                      {enrollmentsLoaded && (
-                        <td>
-                          <span className={"AdminDashboard-pill"} style={{
-                            color: isEnrolled ? "#10B981" : "rgba(255,255,255,0.4)",
-                            background: isEnrolled ? "rgba(16,185,129,0.12)" : "rgba(255,255,255,0.07)",
-                          }}>
-                            {isEnrolled ? "✅ مشترك" : "غير مشترك"}
-                          </span>
-                        </td>
-                      )}
                       <td className={"AdminDashboard-muted"}>
                         {new Date(u.created_at).toLocaleDateString("ar-EG")}
                       </td>
-                      {enrollmentsLoaded && (
-                        <td>
-                          {isEnrolled && (
-                            <button
-                              onClick={() => deleteUserEnrollment(u.id)}
-                              style={{
-                                background: "rgba(239,68,68,0.15)",
-                                color: "#EF4444",
-                                border: "1px solid rgba(239,68,68,0.3)",
-                                borderRadius: "6px",
-                                padding: "4px 12px",
-                                cursor: "pointer",
-                                fontSize: "13px",
-                                fontWeight: 700,
-                              }}
-                            >
-                              🗑️ حذف
-                            </button>
-                          )}
-                        </td>
-                      )}
                     </tr>
                   );
                 })}
@@ -438,7 +400,11 @@ export default function AdminDashboardClient({
 
         {/* Landing Page Editor */}
         {activeTab === "landing" && (
-          <LandingEditor siteSettings={siteSettings} />
+          <LandingEditor 
+            siteSettings={siteSettings} 
+            platformReviews={platformReviews}
+            onUpdateReviewStatus={updateReviewStatus}
+          />
         )}
 
         {/* Notifications */}

@@ -22,7 +22,7 @@ export default async function CourseDetailPage({ params }) {
 
     const { data: reviews } = await supabase
         .from("reviews")
-        .select("*, profiles(name, avatar_url)")
+        .select("*, profiles!reviews_user_id_fkey(name, avatar_url)")
         .eq("course_id", id)
         .order("created_at", { ascending: false })
         .limit(5);
@@ -31,15 +31,35 @@ export default async function CourseDetailPage({ params }) {
     const { data: { user } } = await supabase.auth.getUser();
 
     let enrollment = null;
+    let isAdmin = false;
+    let userRole = "guest";
+
     if (user) {
-        const { data } = await supabase
-            .from("enrollments")
-            .select("*")
-            .eq("user_id", user.id)
-            .eq("course_id", id)
-            .eq("status", "active")  // ← المهم
+        const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
             .single();
-        enrollment = data;
+        
+        userRole = profile?.role ?? "student";
+        isAdmin = profile?.role === "admin";
+
+        // مدرس يدخل كورسه الخاص → متاح بدون دفع
+        const isOwnCourse = profile?.role === "instructor" && course.instructor_id === user.id;
+
+        if (!isOwnCourse) {
+            const { data } = await supabase
+                .from("enrollments")
+                .select("*")
+                .eq("user_id", user.id)
+                .eq("course_id", id)
+                .eq("status", "active")
+                .single();
+            enrollment = data;
+        } else {
+            // جعل enrollment mock يجعل الكورس مفتوح للمدرس
+            enrollment = { id: "own", progress: 0, status: "active" };
+        }
     }
 
     return (
@@ -48,6 +68,8 @@ export default async function CourseDetailPage({ params }) {
             sections={sections ?? []}
             reviews={reviews ?? []}
             enrollment={enrollment}
+            isAdmin={isAdmin}
+            userRole={userRole}
         />
     );
 }

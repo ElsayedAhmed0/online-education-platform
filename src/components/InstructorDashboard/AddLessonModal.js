@@ -160,7 +160,7 @@ export default function AddLessonModal({ courseId, onClose, onSuccess }) {
                         <select className={"AddLessonModal-select"} value={form.type} onChange={e => update("type", e.target.value)}>
                             <option value="video">فيديو</option>
                             <option value="document">ملف PDF</option>
-                            <option value="quiz">اختبار</option>
+                            <option value="quiz">امتحان نهاية القسم</option>
                         </select>
                     </div>
                     <div className={"AddLessonModal-field"}>

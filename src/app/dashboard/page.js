@@ -15,6 +15,10 @@ export default async function DashboardPage() {
         .eq("id", user.id)
         .single();
 
+    // وجّه حسب الدور
+    if (profile?.role === "admin") redirect("/admin/dashboard");
+    if (profile?.role === "instructor") redirect("/instructor/dashboard");
+
     // جيب الكورسات المسجل فيها اللي حالتها active بس
     const { data: enrollments } = await supabase
         .from("enrollments")

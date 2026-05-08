@@ -42,6 +42,12 @@ export default async function AdminDashboardPage() {
         ?.filter(t => t.type === "purchase")
         .reduce((sum, t) => sum + t.amount, 0) ?? 0;
 
+    const { data: platformReviews } = await supabase
+        .from("reviews")
+        .select("id, rating, comment, status, created_at, profiles!reviews_user_id_fkey(name, avatar_url)")
+        .eq("target_type", "platform")
+        .order("created_at", { ascending: false });
+
     return (
         <AdminDashboardClient
             profile={profile}
@@ -50,6 +56,7 @@ export default async function AdminDashboardPage() {
             transactions={transactions ?? []}
             totalRevenue={totalRevenue}
             siteSettings={siteSettings ?? []}
+            platformReviews={platformReviews ?? []}
         />
     );
 }

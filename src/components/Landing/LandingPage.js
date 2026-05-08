@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import ReviewForm from "@/components/CourseDetail/ReviewForm";
 
 const CATEGORIES = [
     { label: "برمجة", icon: "💻", color: "#6366F1" },
@@ -98,7 +99,7 @@ export default function LandingPage({ courses, hero, testimonials, cta }) {
 
                     {/* CTAs */}
                     <div className="heroCtas">
-                        <Link href="/courses" className="ctaPrimary">
+                        <Link href="/#courses" className="ctaPrimary">
                             {hero.cta_primary ?? "ابدأ الآن مجاناً"}
                         </Link>
                         <Link href="/welcome" className="ctaSecondary">
@@ -147,7 +148,7 @@ export default function LandingPage({ courses, hero, testimonials, cta }) {
             </section>
 
             {/* ══ COURSES ══ */}
-            <section className="coursesSection">
+            <section className="coursesSection" id="courses">
                 <div className="container">
                     <div className="sectionHead">
                         <h2 className="sectionTitle">
@@ -190,29 +191,33 @@ export default function LandingPage({ courses, hero, testimonials, cta }) {
             </section>
 
             {/* ══ TESTIMONIALS ══ */}
-            {testimonials.length > 0 && (
-                <section className="testimonialsSection">
-                    <div className="container">
-                        <div className="sectionHead">
-                            <h2 className="sectionTitle">قالوا عن المنصة إيه؟</h2>
-                        </div>
+            <section className="testimonialsSection">
+                <div className="container">
+                    <div className="sectionHead">
+                        <h2 className="sectionTitle">قالوا عن المنصة إيه؟</h2>
+                    </div>
+                    {testimonials.length > 0 && (
                         <div className="testimonialCard">
                             <div className="testimonialStars">
                                 {"★".repeat(testimonials[activeTestimonial]?.rating ?? 5)}
                             </div>
                             <p className="testimonialText">
-                                "{testimonials[activeTestimonial]?.text}"
+                                "{testimonials[activeTestimonial]?.comment}"
                             </p>
                             <div className="testimonialAuthor">
                                 <div className="testimonialAvatar">
-                                    {testimonials[activeTestimonial]?.avatar}
+                                    {testimonials[activeTestimonial]?.profiles?.avatar_url ? (
+                                        <img src={testimonials[activeTestimonial].profiles.avatar_url} alt="avatar" style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
+                                    ) : (
+                                        testimonials[activeTestimonial]?.profiles?.name?.[0] ?? "م"
+                                    )}
                                 </div>
                                 <div>
                                     <div className="testimonialName">
-                                        {testimonials[activeTestimonial]?.name}
+                                        {testimonials[activeTestimonial]?.profiles?.name}
                                     </div>
                                     <div className="testimonialRole">
-                                        {testimonials[activeTestimonial]?.role}
+                                        طالب
                                     </div>
                                 </div>
                             </div>
@@ -226,9 +231,18 @@ export default function LandingPage({ courses, hero, testimonials, cta }) {
                                 ))}
                             </div>
                         </div>
+                    )}
+                    
+                    {/* Add Platform Review */}
+                    <div style={{ marginTop: "40px", background: "rgba(255,255,255,0.03)", padding: "30px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.1)" }}>
+                        <h3 style={{ textAlign: "center", marginBottom: "20px", fontSize: "1.2rem", fontWeight: "bold" }}>شاركنا رأيك في المنصة!</h3>
+                        <ReviewForm 
+                            targetType="platform" 
+                            onSuccess={() => {}} 
+                        />
                     </div>
-                </section>
-            )}
+                </div>
+            </section>
 
             {/* ══ CTA ══ */}
             <section className="ctaSection">
@@ -248,7 +262,7 @@ export default function LandingPage({ courses, hero, testimonials, cta }) {
                             <Link href="/register" className="ctaPrimary">
                                 {cta.cta_primary ?? "سجل الآن مجاناً"}
                             </Link>
-                            <Link href="/" className="ctaSecondary">
+                            <Link href="/#courses" className="ctaSecondary">
                                 {cta.cta_secondary ?? "تصفح الكورسات"} ←
                             </Link>
                         </div>

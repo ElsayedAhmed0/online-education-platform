@@ -26,6 +26,8 @@ export default function InstructorDashboardClient({
     const [students, setStudents] = useState([]);
     const [studentsLoaded, setStudentsLoaded] = useState(false);
     const [selectedCourseStudents, setSelectedCourseStudents] = useState(null);
+    const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? null);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
     useEffect(() => {
         supabase.auth.getUser().then(({ data: { user } }) => {
@@ -39,6 +41,29 @@ export default function InstructorDashboardClient({
                 .then(({ count }) => setUnreadCount(count ?? 0));
         });
     }, []);
+
+    const handleAvatarUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file || !userId) return;
+        setUploadingAvatar(true);
+        try {
+            const ext = file.name.split(".").pop();
+            const path = `avatars/${userId}.${ext}`;
+            const { error: uploadErr } = await supabase.storage
+                .from("eduplatform")
+                .upload(path, file, { upsert: true });
+            if (uploadErr) throw uploadErr;
+            const { data } = supabase.storage.from("eduplatform").getPublicUrl(path);
+            const url = data.publicUrl + `?t=${Date.now()}`;
+            await supabase.from("profiles").update({ avatar_url: url }).eq("id", userId);
+            setAvatarUrl(url);
+        } catch (err) {
+            alert("خطأ في رفع الصورة: " + err.message);
+        } finally {
+            setUploadingAvatar(false);
+            e.target.value = "";
+        }
+    };
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -104,7 +129,51 @@ export default function InstructorDashboardClient({
                 </div>
 
                 <div className={"InstructorDashboard-profile"}>
-                    <div className={"InstructorDashboard-profileAvatar"}>{profile?.name?.[0] ?? "م"}</div>
+                    <label
+                        htmlFor="avatarUpload"
+                        title={uploadingAvatar ? "جاري الرفع..." : "تغيير الصورة"}
+                        style={{
+                            position: "relative", cursor: "pointer", display: "inline-block",
+                            borderRadius: "50%", flexShrink: 0,
+                        }}
+                    >
+                        {avatarUrl ? (
+                            <img
+                                src={avatarUrl}
+                                alt={profile?.name}
+                                style={{
+                                    width: "48px", height: "48px", borderRadius: "50%",
+                                    objectFit: "cover", border: "2px solid var(--primary)",
+                                    display: "block",
+                                }}
+                            />
+                        ) : (
+                            <div className={"InstructorDashboard-profileAvatar"}>
+                                {(profile?.name ?? "").split(" ").map(w => w[0]).join("").slice(0, 3).toUpperCase() || "م"}
+                            </div>
+                        )}
+                        {/* Camera overlay */}
+                        <div style={{
+                            position: "absolute", inset: 0, borderRadius: "50%",
+                            background: "rgba(0,0,0,0.45)", display: "flex",
+                            alignItems: "center", justifyContent: "center",
+                            opacity: 0, transition: "opacity .2s",
+                            fontSize: "18px",
+                        }}
+                            onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                            onMouseLeave={e => e.currentTarget.style.opacity = 0}
+                        >
+                            {uploadingAvatar ? "⏳" : "📷"}
+                        </div>
+                        <input
+                            id="avatarUpload"
+                            type="file"
+                            accept="image/*"
+                            hidden
+                            disabled={uploadingAvatar}
+                            onChange={handleAvatarUpload}
+                        />
+                    </label>
                     <div>
                         <div className={"InstructorDashboard-profileName"}>{profile?.name}</div>
                         <div className={"InstructorDashboard-profileRole"}>مدرس</div>
@@ -145,12 +214,6 @@ export default function InstructorDashboardClient({
                 </nav>
 
                 <div className={"InstructorDashboard-sidebarFooter"}>
-                    <div
-                        className={"InstructorDashboard-navItem"}
-                        onClick={() => router.push("/dashboard")}
-                    >
-                        ↔ عرض كطالب
-                    </div>
                     <button className={"InstructorDashboard-logoutBtn"} onClick={handleLogout}>
                         تسجيل الخروج
                     </button>

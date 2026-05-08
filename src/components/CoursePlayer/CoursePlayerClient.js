@@ -1,7 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
+import PopupQuizModal from "./PopupQuizModal";
+import ExamView from "./ExamView";
 
 function getEmbedUrl(url) {
     if (!url) return null;
@@ -13,7 +15,7 @@ function getEmbedUrl(url) {
 }
 
 export default function CoursePlayerClient({
-    course, sections, lessonId, enrollment, progress, userId
+    course, sections, lessonId, enrollment, progress, userId, isAdmin, dashboardUrl = "/dashboard"
 }) {
     const router = useRouter();
     const supabase = createClient();
@@ -22,19 +24,76 @@ export default function CoursePlayerClient({
     const currentLesson = allLessons.find(l => String(l.id) === String(lessonId)) ?? allLessons[0];
     const completedIds = new Set((progress || []).filter(p => p.completed).map(p => p.lesson_id));
 
+    // Extract URL if user pasted an iframe
+    let finalVideoUrl = currentLesson?.video_url;
+    if (finalVideoUrl && finalVideoUrl.includes("<iframe")) {
+        const match = finalVideoUrl.match(/src=["'](.*?)["']/);
+        if (match) finalVideoUrl = match[1];
+    }
+    const embedUrl = getEmbedUrl(finalVideoUrl);
+    const playableUrl = finalVideoUrl || embedUrl;
+
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [completed, setCompleted] = useState(completedIds);
     const [enrollProgress, setEnrollProgress] = useState(enrollment?.progress || 0);
     const [showLockModal, setShowLockModal] = useState(false);
+    const [lockMessage, setLockMessage] = useState("");
+
+    // --- Quiz & Exam State ---
+    const [isClient, setIsClient] = useState(false);
+    const [popupQuestions, setPopupQuestions] = useState([]);
+    const [activePopup, setActivePopup] = useState(null);
+    const [answeredPopups, setAnsweredPopups] = useState(new Set());
+    const [playing, setPlaying] = useState(false);
+    const [toastMsg, setToastMsg] = useState("");
+    const playerRef = useRef(null);
+    const nativeVideoRef = useRef(null);
+
+    useEffect(() => { setIsClient(true); }, []);
+
+    useEffect(() => {
+        if (currentLesson?.type === "video") {
+            fetchPopupQuestions();
+        } else {
+            setActivePopup(null);
+            setPopupQuestions([]);
+        }
+    }, [currentLesson?.id]);
+
+    const fetchPopupQuestions = async () => {
+        const { data } = await supabase
+            .from("questions")
+            .select("*")
+            .eq("lesson_id", currentLesson.id)
+            .not("popup_time", "is", null);
+        if (data) {
+            setPopupQuestions(data);
+            setAnsweredPopups(new Set());
+            setActivePopup(null);
+        }
+    };
+
+    // Calculate Locked Sections based on Exams
+    const lockedSections = new Set();
+    let isBlockedByExam = false;
+
+    sections.forEach((sec) => {
+        if (isBlockedByExam) {
+            lockedSections.add(sec.id);
+        }
+        const examLesson = sec.lessons?.find(l => l.type === "quiz");
+        if (examLesson && !completed.has(examLesson.id)) {
+            isBlockedByExam = true;
+        }
+    });
 
     const currentIndex = allLessons.findIndex(l => String(l.id) === String(lessonId));
     const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
     const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
-    const embedUrl = getEmbedUrl(currentLesson?.video_url);
 
     const markComplete = async () => {
         if (!userId) { router.push("/login"); return; }
-        if (!currentLesson || completed.has(currentLesson.id) || !enrollment) return;
+        if (!currentLesson || completed.has(currentLesson.id) || (!enrollment && !isAdmin)) return;
 
         await supabase.from("lesson_progress").upsert({
             user_id: userId,
@@ -59,11 +118,64 @@ export default function CoursePlayerClient({
         router.push(`/learn/${course.id}/${lesson.id}`);
     };
 
+    // --- Player Progress Logic ---
+    const handleProgress = (state) => {
+        if (!playing || activePopup) return;
+        const currentTime = state.playedSeconds;
+        
+        const q = popupQuestions.find(q => 
+            !answeredPopups.has(q.id) && 
+            Math.floor(currentTime) === q.popup_time
+        );
+
+        if (q) {
+            setPlaying(false);
+            setActivePopup(q);
+        }
+    };
+
+    const handlePopupCorrect = () => {
+        setAnsweredPopups(prev => new Set(prev).add(activePopup.id));
+        setActivePopup(null);
+        
+        if (isReactPlayerType) {
+            setPlaying(true);
+        } else if (isFilePlayerType && nativeVideoRef.current) {
+            nativeVideoRef.current.play().catch(e => console.log(e));
+        }
+    };
+
+    const handlePopupWrong = () => {
+        setActivePopup(null);
+        setToastMsg("إجابة خاطئة، راجع الدرس تاني كويس");
+        setTimeout(() => setToastMsg(""), 4000);
+        
+        if (isFilePlayerType && nativeVideoRef.current) {
+            nativeVideoRef.current.currentTime = 0;
+            nativeVideoRef.current.play().catch(e => console.log(e));
+        }
+    };
+
+    const isFilePlayerType = playableUrl?.match(/\.(mp4|webm|ogg|mov|mp3|wav|flac|aac)(\?.*)?$/i);
+
+    const handleNativeTimeUpdate = (e) => {
+        if (activePopup) return;
+        const currentTime = e.target.currentTime;
+        const q = popupQuestions.find(q => 
+            !answeredPopups.has(q.id) && 
+            Math.floor(currentTime) === q.popup_time
+        );
+        if (q) {
+            e.target.pause();
+            setActivePopup(q);
+        }
+    };
+
     return (
         <div className={"CoursePlayer-page"}>
             {/* Topbar */}
             <div className={"CoursePlayer-topbar"}>
-                <button className={"CoursePlayer-backBtn"} onClick={() => router.push("/dashboard")}>
+                <button className={"CoursePlayer-backBtn"} onClick={() => router.push(dashboardUrl)}>
                     ← الداشبورد
                 </button>
                 <div className={"CoursePlayer-topbarTitle"}>{course.title}</div>
@@ -79,18 +191,62 @@ export default function CoursePlayerClient({
                 {/* Video Area */}
                 <div className={"CoursePlayer-videoArea"}>
                     <div className={"CoursePlayer-videoPlayer"}>
-                        {embedUrl ? (
-                            <iframe
-                                key={embedUrl}
-                                src={embedUrl}
-                                allowFullScreen
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                className={"CoursePlayer-iframe"}
-                            />
+                        {currentLesson?.type === "quiz" ? (
+                            <div style={{ height: "100%", overflowY: "auto", background: "#0f172a" }}>
+                                <ExamView 
+                                    courseId={course.id} 
+                                    lessonId={currentLesson.id} 
+                                    userId={userId} 
+                                    onPassed={markComplete} 
+                                />
+                            </div>
+                        ) : isClient && playableUrl ? (
+                            <div style={{ position: "relative", width: "100%", height: "100%" }}>
+                                {isFilePlayerType ? (
+                                    <video
+                                        ref={nativeVideoRef}
+                                        src={playableUrl}
+                                        controls
+                                        controlsList="nodownload"
+                                        style={{ width: "100%", height: "100%", background: "#000" }}
+                                        onTimeUpdate={handleNativeTimeUpdate}
+                                        onError={(e) => {
+                                            console.error("Native Video Error", e);
+                                            setToastMsg("فشل تحميل الفيديو. يرجى التأكد من الرابط أو إعادة رفعه.");
+                                            setTimeout(() => setToastMsg(""), 5000);
+                                        }}
+                                    />
+                                ) : (
+                                    <iframe
+                                        key={embedUrl}
+                                        src={embedUrl}
+                                        allowFullScreen
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        className={"CoursePlayer-iframe"}
+                                    />
+                                )}
+                                {activePopup && isFilePlayerType && (
+                                    <PopupQuizModal 
+                                        question={activePopup}
+                                        onCorrect={handlePopupCorrect}
+                                        onWrong={handlePopupWrong}
+                                    />
+                                )}
+                            </div>
                         ) : (
                             <div className={"CoursePlayer-videoPlaceholder"}>
                                 <div className={"CoursePlayer-playIcon"}>▶</div>
-                                <div>اختر درساً من القائمة</div>
+                                <div>{currentLesson?.type === "document" ? "ملف PDF مقروء" : "اختر درساً من القائمة"}</div>
+                            </div>
+                        )}
+                        
+                        {toastMsg && (
+                            <div style={{
+                                position: "absolute", bottom: "80px", left: "50%", transform: "translateX(-50%)",
+                                background: "#EF4444", color: "#fff", padding: "12px 24px", borderRadius: "8px",
+                                zIndex: 10, fontWeight: "bold", boxShadow: "0 4px 6px rgba(0,0,0,0.1)"
+                            }}>
+                                {toastMsg}
                             </div>
                         )}
                     </div>
@@ -109,7 +265,17 @@ export default function CoursePlayerClient({
                                 >← السابق</button>
                                 <button
                                     className={"CoursePlayer-navBtn"}
-                                    onClick={() => nextLesson && goToLesson(nextLesson)}
+                                    onClick={() => {
+                                        if (nextLesson) {
+                                            const secOfNext = sections.find(s => s.lessons?.some(l => l.id === nextLesson.id));
+                                            if (secOfNext && lockedSections.has(secOfNext.id)) {
+                                                setLockMessage("يجب اجتياز امتحان القسم السابق لفتح هذا الدرس");
+                                                setShowLockModal(true);
+                                                return;
+                                            }
+                                            goToLesson(nextLesson);
+                                        }
+                                    }}
                                     disabled={!nextLesson}
                                 >التالي ←</button>
                             </div>
@@ -141,53 +307,63 @@ export default function CoursePlayerClient({
                     </div>
 
                     <div className={"CoursePlayer-sectionsList"}>
-                        {sections.map((sec, secIdx) => (
-                            <div key={sec.id} className={"CoursePlayer-section"}>
-                                <div className={"CoursePlayer-sectionHeader"}>
-                                    <span className={"CoursePlayer-sectionNum"}>القسم {secIdx + 1}</span>
-                                    <span className={"CoursePlayer-sectionTitle"}>{sec.title}</span>
-                                    <span className={"CoursePlayer-sectionCount"}>
-                                        {sec.lessons?.filter(l => completed.has(l.id)).length}/{sec.lessons?.length}
-                                    </span>
-                                </div>
+                        {sections.map((sec, secIdx) => {
+                            const sectionLocked = lockedSections.has(sec.id);
+                            
+                            return (
+                                <div key={sec.id} className={"CoursePlayer-section"}>
+                                    <div className={"CoursePlayer-sectionHeader"}>
+                                        <span className={"CoursePlayer-sectionNum"}>القسم {secIdx + 1} {sectionLocked && "🔒"}</span>
+                                        <span className={"CoursePlayer-sectionTitle"}>{sec.title}</span>
+                                        <span className={"CoursePlayer-sectionCount"}>
+                                            {sec.lessons?.filter(l => completed.has(l.id)).length}/{sec.lessons?.length}
+                                        </span>
+                                    </div>
 
-                                {sec.lessons?.map((lesson) => {
-                                    const globalIdx = allLessons.findIndex(l => String(l.id) === String(lesson.id));
-                                    const lessonLocked = globalIdx >= 3 && !enrollment;
+                                    {sec.lessons?.map((lesson) => {
+                                        const globalIdx = allLessons.findIndex(l => String(l.id) === String(lesson.id));
+                                        const needsEnrollment = globalIdx >= 3 && !enrollment && !isAdmin;
+                                        const lessonLocked = needsEnrollment || (sectionLocked && !isAdmin);
 
-                                    return (
-                                        <div
-                                            key={lesson.id}
-                                            className={`${"CoursePlayer-lessonRow"} 
-                                                ${lesson.id === currentLesson?.id ? "CoursePlayer-lessonActive" : ""} 
-                                                ${completed.has(lesson.id) ? "CoursePlayer-lessonDone" : ""}`}
-                                            onClick={() => {
-                                                if (lessonLocked) {
-                                                    setShowLockModal(true);
-                                                    return;
-                                                }
-                                                goToLesson(lesson);
-                                            }}
-                                            style={{
-                                                cursor: lessonLocked ? "not-allowed" : "pointer",
-                                                opacity: lessonLocked ? 0.5 : 1
-                                            }}
-                                        >
-                                            <span className={"CoursePlayer-lessonCheck"}>
-                                                {lessonLocked ? "🔒" : completed.has(lesson.id) ? "✅" : "○"}
-                                            </span>
-                                            <div className={"CoursePlayer-lessonInfo2"}>
-                                                <span className={"CoursePlayer-lessonName"}>{lesson.title}</span>
-                                                <span className={"CoursePlayer-lessonMeta"}>
-                                                    {lesson.type === "video" ? "🎬" : lesson.type === "document" ? "📄" : "📝"}
-                                                    {lesson.duration && ` ${lesson.duration}`}
+                                        return (
+                                            <div
+                                                key={lesson.id}
+                                                className={`${"CoursePlayer-lessonRow"} 
+                                                    ${lesson.id === currentLesson?.id ? "CoursePlayer-lessonActive" : ""} 
+                                                    ${completed.has(lesson.id) ? "CoursePlayer-lessonDone" : ""}`}
+                                                onClick={() => {
+                                                    if (lessonLocked) {
+                                                        if (needsEnrollment) {
+                                                            setLockMessage("اشترك في الكورس للوصول لجميع الدروس");
+                                                        } else {
+                                                            setLockMessage("يجب اجتياز امتحان القسم السابق لفتح هذا الدرس");
+                                                        }
+                                                        setShowLockModal(true);
+                                                        return;
+                                                    }
+                                                    goToLesson(lesson);
+                                                }}
+                                                style={{
+                                                    cursor: lessonLocked ? "not-allowed" : "pointer",
+                                                    opacity: lessonLocked ? 0.5 : 1
+                                                }}
+                                            >
+                                                <span className={"CoursePlayer-lessonCheck"}>
+                                                    {lessonLocked ? "🔒" : completed.has(lesson.id) ? "✅" : "○"}
                                                 </span>
+                                                <div className={"CoursePlayer-lessonInfo2"}>
+                                                    <span className={"CoursePlayer-lessonName"}>{lesson.title}</span>
+                                                    <span className={"CoursePlayer-lessonMeta"}>
+                                                        {lesson.type === "video" ? "🎬" : lesson.type === "document" ? "📄" : "📝"}
+                                                        {lesson.duration && ` ${lesson.duration}`}
+                                                    </span>
+                                                </div>
                                             </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        ))}
+                                        );
+                                    })}
+                                </div>
+                            );
+                        })}
 
                         {sections.length === 0 && (
                             <div className={"CoursePlayer-emptyLessons"}>
@@ -212,25 +388,29 @@ export default function CoursePlayerClient({
                     }}>
                         <div style={{ fontSize: "48px", marginBottom: "16px" }}>🔒</div>
                         <h2 style={{ color: "#fff", marginBottom: "8px" }}>الدرس مقفول</h2>
-                        <p style={{ color: "rgba(255,255,255,0.6)", marginBottom: "24px" }}>
-                            اشترك في الكورس للوصول لجميع الدروس
+                        <p style={{ color: "rgba(255,255,255,0.6)", marginBottom: "24px", lineHeight: "1.5" }}>
+                            {lockMessage}
                         </p>
-                        <button
-                           onClick={() => router.push(`/checkout/${course.id}`)}
-                            style={{
-                                background: "#818CF8", color: "#fff", border: "none",
-                                borderRadius: "8px", padding: "12px 24px", cursor: "pointer",
-                                fontSize: "15px", fontWeight: 700, width: "100%",
-                                marginBottom: "8px",
-                            }}
-                        >
-                            🎓 اشترك الآن
-                        </button>
+                        
+                        {lockMessage.includes("اشترك") && (
+                            <button
+                            onClick={() => router.push(`/checkout/${course.id}`)}
+                                style={{
+                                    background: "#818CF8", color: "#fff", border: "none",
+                                    borderRadius: "8px", padding: "12px 24px", cursor: "pointer",
+                                    fontSize: "15px", fontWeight: 700, width: "100%",
+                                    marginBottom: "8px",
+                                }}
+                            >
+                                🎓 اشترك الآن
+                            </button>
+                        )}
                         <button
                             onClick={() => setShowLockModal(false)}
                             style={{
                                 background: "transparent", color: "rgba(255,255,255,0.5)",
                                 border: "none", cursor: "pointer", fontSize: "14px",
+                                width: "100%", padding: "10px"
                             }}
                         >
                             إغلاق

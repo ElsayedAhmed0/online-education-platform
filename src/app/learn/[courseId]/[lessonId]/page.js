@@ -29,12 +29,19 @@ export default async function CoursePlayerPage({ params }) {
         .eq("status", "active")
         .single();
 
-    // ✅ مشترك active → كل الدروس مفتوحة
-    // ✅ مش مشترك أو cancelled → أول 3 دروس بس مجاناً
-    if (!enrollment && lessonIndex >= 3) {
-        redirect(`/courses/${courseId}`);
-    }
+    const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+    
+    const isAdmin = profile?.role === "admin";
+    const userRole = profile?.role ?? "student";
+    const dashboardUrl = userRole === "admin" ? "/admin/dashboard" 
+        : userRole === "instructor" ? "/instructor/dashboard" 
+        : "/dashboard";
 
+    // مدرس يدخل كورسه الخاص → متاح بدون قيود
     const { data: course } = await supabase
         .from("courses")
         .select("*, profiles(name)")
@@ -42,6 +49,14 @@ export default async function CoursePlayerPage({ params }) {
         .single();
 
     if (!course) notFound();
+
+    const isOwnCourse = userRole === "instructor" && course.instructor_id === user.id;
+
+    // ✅ مشترك active أو أدمن أو مدرس في كورسه → كل الدروس مفتوحة
+    // ✅ مش مشترك أو cancelled → أول 3 دروس بس مجاناً
+    if (!isAdmin && !isOwnCourse && !enrollment && lessonIndex >= 3) {
+        redirect(`/courses/${courseId}`);
+    }
 
     const { data: prog } = await supabase
         .from("lesson_progress")
@@ -53,9 +68,11 @@ export default async function CoursePlayerPage({ params }) {
             course={course}
             sections={sections ?? []}
             lessonId={lessonId}
-            enrollment={enrollment}
+            enrollment={isOwnCourse ? { id: "own", progress: 0, status: "active" } : enrollment}
             progress={prog ?? []}
             userId={user.id}
+            isAdmin={isAdmin || isOwnCourse}
+            dashboardUrl={dashboardUrl}
         />
     );
 }

@@ -243,22 +243,14 @@ export default function ChatClient({ currentUser }) {
             users = data ?? [];
 
         } else if (role === "student") {
-            const { data: enrollments } = await supabase
-                .from("enrollments")
-                .select("course_id, courses(instructor_id)")
-                .eq("user_id", currentUser.id);
-
-            const instructorIds = [...new Set(
-                (enrollments ?? []).map(e => e.courses?.instructor_id).filter(Boolean)
-            )];
-
-            if (instructorIds.length === 0) { setAllUsers([]); return; }
-
+            // الطالب يشوف كل المدرسين في المنصة
             const { data } = await supabase
                 .from("profiles")
                 .select("id, name, avatar_url, role")
-                .in("id", instructorIds)
-                .ilike("name", `%${q}%`);
+                .eq("role", "instructor")
+                .neq("id", currentUser.id)
+                .ilike("name", `%${q}%`)
+                .limit(30);
             users = data ?? [];
 
         } else if (role === "instructor") {
@@ -334,17 +326,6 @@ export default function ChatClient({ currentUser }) {
                         <span style={{ fontSize: "16px", fontWeight: 800, color: "var(--text-primary)" }}>
                             الرسائل
                         </span>
-                        <button
-                            onClick={() => { setShowNewChat(true); setActiveConvo(null); }}
-                            style={{
-                                background: "linear-gradient(135deg, var(--primary), var(--secondary))",
-                                border: "none", borderRadius: "var(--radius-md)",
-                                color: "#fff", fontSize: "12px", fontWeight: 700,
-                                padding: "6px 12px", cursor: "pointer",
-                            }}
-                        >
-                            + جديد
-                        </button>
                     </div>
                     <input
                         value={search}
@@ -474,7 +455,7 @@ export default function ChatClient({ currentUser }) {
                                 }}
                             />
                             <div style={{ padding: "8px 0 0", fontSize: "12px", color: "var(--text-muted)" }}>
-                                {currentUser.role === "student" && "يمكنك التواصل مع مدرسي كورساتك فقط"}
+                                {currentUser.role === "student" && "يمكنك التواصل مع جميع المدرسين في المنصة"}
                                 {currentUser.role === "instructor" && "يمكنك التواصل مع طلابك المشتركين في كورساتك فقط"}
                                 {currentUser.role === "admin" && "يمكنك التواصل مع جميع المستخدمين"}
                             </div>
@@ -492,7 +473,7 @@ export default function ChatClient({ currentUser }) {
                                         {currentUser.role === "student" ? "📚" :
                                             currentUser.role === "instructor" ? "👥" : "🔍"}
                                     </div>
-                                    {currentUser.role === "student" && "لا يوجد مدرسون — سجّل في كورس أولاً"}
+                                    {currentUser.role === "student" && "لا يوجد مدرسون في المنصة بعد"}
                                     {currentUser.role === "instructor" && (userSearch
                                         ? `لا يوجد طلاب باسم "${userSearch}"`
                                         : "لا يوجد طلاب مشتركين في كورساتك بعد")}

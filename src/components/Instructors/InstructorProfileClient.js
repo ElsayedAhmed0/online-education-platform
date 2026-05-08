@@ -1,5 +1,8 @@
 "use client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase";
+import ReviewForm from "@/components/CourseDetail/ReviewForm";
 
 const LEVEL_MAP = {
     beginner: { label: "مبتدئ", color: "var(--success)", bg: "rgba(16,185,129,.12)" },
@@ -7,7 +10,9 @@ const LEVEL_MAP = {
     advanced: { label: "متقدم", color: "var(--danger)", bg: "rgba(239,68,68,.12)" },
 };
 
-export default function InstructorProfileClient({ instructor, courses, totalStudents }) {
+export default function InstructorProfileClient({ instructor, courses, totalStudents, reviews = [], currentUserId }) {
+    const router = useRouter();
+    const supabase = createClient();
     const initials = instructor.name
         ?.split(" ")
         .slice(0, 2)
@@ -44,7 +49,53 @@ export default function InstructorProfileClient({ instructor, courses, totalStud
 
                         {/* Details */}
                         <div className="InstructorProfile-heroDetails">
-                            <h1 className="InstructorProfile-name">{instructor.name}</h1>
+                            <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+                                <h1 className="InstructorProfile-name">{instructor.name}</h1>
+                                {currentUserId && currentUserId !== instructor.id && (
+                                    <button
+                                        onClick={async () => {
+                                            // ابحث عن محادثة موجودة أو انشئ جديدة
+                                            const { data: existing } = await supabase
+                                                .from("conversations")
+                                                .select("id")
+                                                .or(
+                                                    `and(user1_id.eq.${currentUserId},user2_id.eq.${instructor.id}),and(user1_id.eq.${instructor.id},user2_id.eq.${currentUserId})`
+                                                )
+                                                .single();
+
+                                            if (existing) {
+                                                router.push(`/chat?c=${existing.id}`);
+                                            } else {
+                                                const { data: newConvo } = await supabase
+                                                    .from("conversations")
+                                                    .insert({
+                                                        user1_id: currentUserId,
+                                                        user2_id: instructor.id,
+                                                        last_message: null,
+                                                        last_message_at: new Date().toISOString(),
+                                                    })
+                                                    .select()
+                                                    .single();
+                                                if (newConvo) router.push(`/chat?c=${newConvo.id}`);
+                                            }
+                                        }}
+                                        style={{
+                                            display: "flex", alignItems: "center", gap: "6px",
+                                            background: "linear-gradient(135deg, var(--primary), var(--secondary))",
+                                            color: "#fff", border: "none",
+                                            borderRadius: "var(--radius-md)",
+                                            padding: "8px 18px", fontSize: "13px",
+                                            fontWeight: 700, cursor: "pointer",
+                                            fontFamily: "var(--font)",
+                                            transition: "opacity .2s",
+                                        }}
+                                        onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
+                                        onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+                                    >
+                                        💬 راسله
+                                    </button>
+                                )}
+                            </div>
                             {instructor.specialization && (
                                 <p className="InstructorProfile-spec">
                                     🎯 {instructor.specialization}
@@ -109,13 +160,48 @@ export default function InstructorProfileClient({ instructor, courses, totalStud
                     </div>
                 )}
             </div>
+
+            {/* Reviews Section */}
+            <div className="InstructorProfile-container" style={{ marginTop: "40px" }}>
+                <h2 className="InstructorProfile-sectionTitle">تقييمات الطلاب للمدرس</h2>
+                
+                {reviews.length > 0 ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "40px" }}>
+                        {reviews.map(r => (
+                            <div key={r.id} style={{ background: "rgba(255,255,255,0.03)", padding: "20px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
+                                    <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold" }}>
+                                        {r.profiles?.name?.[0] ?? "ط"}
+                                    </div>
+                                    <div>
+                                        <div style={{ fontWeight: "bold" }}>{r.profiles?.name}</div>
+                                        <div style={{ color: "#FBBF24", fontSize: "14px" }}>{"★".repeat(r.rating)}</div>
+                                    </div>
+                                </div>
+                                <div style={{ color: "rgba(255,255,255,0.8)", lineHeight: "1.6" }}>{r.comment}</div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p style={{ color: "rgba(255,255,255,0.6)", marginBottom: "40px" }}>لا توجد تقييمات حتى الآن. كن أول من يقيّم المدرس!</p>
+                )}
+
+                <ReviewForm 
+                    targetType="instructor" 
+                    targetId={instructor.id} 
+                    onSuccess={() => {
+                        window.location.reload(); // Instructor profile might need full reload or we can add useRouter if not present. Wait, useRouter isn't imported. Let me just use window.location.reload() but why wouldn't it work? Wait! I can import useRouter.
+                    }} 
+                />
+            </div>
         </div>
     );
 }
 
 function CourseCard({ course }) {
     const lvl = LEVEL_MAP[course.level] ?? LEVEL_MAP.beginner;
-    const hasDiscount = course.discount_price && course.discount_price < course.price;
+    // ✅ تعديل: old_price بدل discount_price
+    const hasDiscount = course.old_price && course.old_price > course.price;
 
     function renderStars(rating) {
         const full = Math.floor(rating);
@@ -133,8 +219,9 @@ function CourseCard({ course }) {
         <Link href={`/courses/${course.id}`} className="InstructorCourseCard-wrap">
             {/* Thumbnail */}
             <div className="InstructorCourseCard-thumb">
-                {course.thumbnail_url ? (
-                    <img src={course.thumbnail_url} alt={course.title} />
+                {/* ✅ تعديل: thumbnail بدل thumbnail_url */}
+                {course.thumbnail ? (
+                    <img src={course.thumbnail} alt={course.title} />
                 ) : (
                     <div className="InstructorCourseCard-thumbFallback">📚</div>
                 )}
@@ -183,11 +270,12 @@ function CourseCard({ course }) {
                             <span className="InstructorCourseCard-free">مجاني</span>
                         ) : hasDiscount ? (
                             <>
+                                {/* ✅ تعديل: old_price بدل discount_price */}
                                 <span className="InstructorCourseCard-priceOld">
-                                    {course.price} ج.م
+                                    {course.old_price} ج.م
                                 </span>
                                 <span className="InstructorCourseCard-priceNew">
-                                    {course.discount_price} ج.م
+                                    {course.price} ج.م
                                 </span>
                             </>
                         ) : (

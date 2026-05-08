@@ -25,11 +25,6 @@ const DEFAULT_CTA = {
     features: ["بدون رسوم اشتراك", "كورسات محدّثة باستمرار", "شهادات معتمدة"],
 };
 
-const DEFAULT_TESTIMONIALS = [
-    { name: "أحمد محمد", role: "مطور ويب", text: "المنصة غيّرت حياتي المهنية بالكامل!", rating: 5, avatar: "👨‍💻" },
-    { name: "سارة علي", role: "مصممة جرافيك", text: "كورسات احترافية بشرح واضح ومبسط جداً.", rating: 5, avatar: "👩‍🎨" },
-];
-
 /* ── Sub-components ── */
 
 function SectionHeader({ icon, title, isOpen, onToggle }) {
@@ -206,87 +201,83 @@ function HeroEditor({ hero, onChange, supabase }) {
     );
 }
 
-/* ── Testimonials Section ── */
-function TestimonialsEditor({ testimonials, onChange }) {
-    const update = (idx, key, val) => {
-        const next = testimonials.map((t, i) => i === idx ? { ...t, [key]: val } : t);
-        onChange(next);
+/* ── Reviews Manager Section ── */
+function ReviewsManager({ platformReviews, onUpdateReviewStatus }) {
+    const STATUS_LABELS = {
+        approved: { label: "ظاهر", color: "#10B981", bg: "rgba(16,185,129,.12)" },
+        pending:  { label: "بانتظار", color: "#FBBF24", bg: "rgba(251,191,36,.12)" },
+        rejected: { label: "مخفي", color: "#EF4444", bg: "rgba(239,68,68,.12)" },
     };
-
-    const add = () =>
-        onChange([...testimonials, { name: "", role: "", text: "", rating: 5, avatar: "⭐" }]);
-
-    const remove = (idx) =>
-        onChange(testimonials.filter((_, i) => i !== idx));
 
     return (
         <div className="LandingEditor-body">
-            {testimonials.map((t, idx) => (
-                <div key={idx} className="LandingEditor-testimonialCard">
-                    <div className="LandingEditor-testimonialCardHeader">
-                        <span className="LandingEditor-testimonialNum">#{idx + 1}</span>
-                        <button
-                            className="LandingEditor-removeBtn"
-                            onClick={() => remove(idx)}
-                            type="button"
-                        >✕ حذف</button>
-                    </div>
-
-                    <div className="LandingEditor-grid3">
-                        <Field label="الاسم">
-                            <input
-                                className="LandingEditor-input"
-                                value={t.name}
-                                onChange={e => update(idx, "name", e.target.value)}
-                                placeholder="أحمد محمد"
-                            />
-                        </Field>
-                        <Field label="الدور / المهنة">
-                            <input
-                                className="LandingEditor-input"
-                                value={t.role}
-                                onChange={e => update(idx, "role", e.target.value)}
-                                placeholder="مطور ويب"
-                            />
-                        </Field>
-                        <Field label="الأيقونة / Avatar">
-                            <input
-                                className="LandingEditor-input"
-                                value={t.avatar}
-                                onChange={e => update(idx, "avatar", e.target.value)}
-                                placeholder="👨‍💻"
-                            />
-                        </Field>
-                    </div>
-
-                    <Field label="التقييم (1-5)">
-                        <div className="LandingEditor-ratingRow">
-                            {[1, 2, 3, 4, 5].map(star => (
-                                <button
-                                    key={star}
-                                    type="button"
-                                    className={`LandingEditor-starBtn${t.rating >= star ? " LandingEditor-starActive" : ""}`}
-                                    onClick={() => update(idx, "rating", star)}
-                                >★</button>
-                            ))}
+            {platformReviews.length === 0 && (
+                <p style={{ color: "rgba(255,255,255,.4)", textAlign: "center", padding: "40px" }}>
+                    لا توجد تقييمات حتى الآن
+                </p>
+            )}
+            {platformReviews.map(r => {
+                const s = STATUS_LABELS[r.status] ?? STATUS_LABELS.pending;
+                return (
+                    <div key={r.id} style={{
+                        display: "flex", gap: "16px", alignItems: "flex-start",
+                        background: "rgba(255,255,255,0.03)", borderRadius: "12px",
+                        padding: "16px", border: "1px solid rgba(255,255,255,0.06)",
+                        marginBottom: "12px",
+                    }}>
+                        {/* Avatar */}
+                        <div style={{
+                            width: "42px", height: "42px", borderRadius: "50%",
+                            background: "var(--primary)", display: "flex", alignItems: "center",
+                            justifyContent: "center", fontWeight: "bold", flexShrink: 0,
+                        }}>
+                            {r.profiles?.name?.[0] ?? "م"}
                         </div>
-                    </Field>
 
-                    <Field label="نص الشهادة">
-                        <textarea
-                            className="LandingEditor-textarea"
-                            rows={3}
-                            value={t.text}
-                            onChange={e => update(idx, "text", e.target.value)}
-                            placeholder="المنصة غيّرت حياتي المهنية..."
-                        />
-                    </Field>
-                </div>
-            ))}
+                        {/* Content */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px", flexWrap: "wrap" }}>
+                                <strong style={{ color: "var(--text-primary)" }}>{r.profiles?.name}</strong>
+                                <span style={{ color: "#FBBF24", fontSize: "13px" }}>{"\u2605".repeat(r.rating)}</span>
+                                <span style={{
+                                    background: s.bg, color: s.color,
+                                    borderRadius: "20px", padding: "2px 10px", fontSize: "12px", fontWeight: 700,
+                                }}>{s.label}</span>
+                                <span style={{ color: "rgba(255,255,255,.35)", fontSize: "12px", marginRight: "auto" }}>
+                                    {new Date(r.created_at).toLocaleDateString("ar-EG")}
+                                </span>
+                            </div>
+                            <p style={{ color: "rgba(255,255,255,.7)", margin: 0, lineHeight: "1.6", fontSize: "14px" }}>
+                                {r.comment}
+                            </p>
+                        </div>
 
-            <button className="LandingEditor-addBtn LandingEditor-addTestimonial" onClick={add} type="button">
-                + إضافة شهادة جديدة
-            </button>
+                        {/* Actions */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "6px", flexShrink: 0 }}>
+                            {r.status !== "approved" && (
+                                <button
+                                    onClick={() => onUpdateReviewStatus(r.id, "approved")}
+                                    style={{
+                                        background: "rgba(16,185,129,.15)", color: "#10B981",
+                                        border: "1px solid rgba(16,185,129,.3)", borderRadius: "6px",
+                                        padding: "6px 12px", cursor: "pointer", fontSize: "12px", fontWeight: 700,
+                                    }}
+                                >✓ إظهار</button>
+                            )}
+                            {r.status !== "rejected" && (
+                                <button
+                                    onClick={() => onUpdateReviewStatus(r.id, "rejected")}
+                                    style={{
+                                        background: "rgba(239,68,68,.15)", color: "#EF4444",
+                                        border: "1px solid rgba(239,68,68,.3)", borderRadius: "6px",
+                                        padding: "6px 12px", cursor: "pointer", fontSize: "12px", fontWeight: 700,
+                                    }}
+                                >✕ إخفاء</button>
+                            )}
+                        </div>
+                    </div>
+                );
+            })}
         </div>
     );
 }
@@ -376,13 +367,12 @@ function CtaEditor({ cta, onChange }) {
 }
 
 /* ══ Main LandingEditor ══ */
-export default function LandingEditor({ siteSettings }) {
+export default function LandingEditor({ siteSettings, platformReviews = [], onUpdateReviewStatus }) {
     const getVal = (id, def) =>
         siteSettings?.find(s => s.id === id)?.value ?? def;
 
-    const [hero, setHero]               = useState(getVal("hero", DEFAULT_HERO));
-    const [testimonials, setTestimonials] = useState(getVal("testimonials", DEFAULT_TESTIMONIALS));
-    const [cta, setCta]                 = useState(getVal("cta", DEFAULT_CTA));
+    const [hero, setHero] = useState(getVal("hero", DEFAULT_HERO));
+    const [cta, setCta]   = useState(getVal("cta", DEFAULT_CTA));
 
     const [openSection, setOpenSection] = useState("hero");
     const [saving, setSaving]           = useState(false);
@@ -398,9 +388,8 @@ export default function LandingEditor({ siteSettings }) {
 
         try {
             const rows = [
-                { id: "hero",         value: hero },
-                { id: "testimonials", value: testimonials },
-                { id: "cta",          value: cta },
+                { id: "hero", value: hero },
+                { id: "cta",  value: cta },
             ];
 
             const { error: err } = await supabase
@@ -418,6 +407,8 @@ export default function LandingEditor({ siteSettings }) {
         }
     };
 
+    const pendingCount = platformReviews.filter(r => r.status === "pending").length;
+
     const sections = [
         {
             id: "hero",
@@ -426,10 +417,10 @@ export default function LandingEditor({ siteSettings }) {
             content: <HeroEditor hero={hero} onChange={setHero} supabase={supabase} />,
         },
         {
-            id: "testimonials",
+            id: "reviews",
             icon: "💬",
-            title: "Testimonials — آراء الطلاب",
-            content: <TestimonialsEditor testimonials={testimonials} onChange={setTestimonials} />,
+            title: `آراء الطلاب — مساهمات التقييم${pendingCount > 0 ? ` (• ${pendingCount} بانتظار)` : ""}`,
+            content: <ReviewsManager platformReviews={platformReviews} onUpdateReviewStatus={onUpdateReviewStatus} />,
         },
         {
             id: "cta",

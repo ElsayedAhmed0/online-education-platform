@@ -2,8 +2,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase";
 
-
-export default function ReviewForm({ courseId, onSuccess }) {
+export default function ReviewForm({ targetType = "course", targetId, onSuccess }) {
     const supabase = createClient();
     const [rating, setRating] = useState(0);
     const [hover, setHover] = useState(0);
@@ -23,60 +22,60 @@ export default function ReviewForm({ courseId, onSuccess }) {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("سجّل دخولك أولاً");
 
-            const { error } = await supabase.from("reviews").insert({
+            // For platform reviews, status is 'pending', otherwise 'approved'
+            const status = targetType === "platform" ? "pending" : "approved";
+
+            const insertData = {
                 user_id: user.id,
-                course_id: courseId,
                 rating,
                 comment,
-            });
+                target_type: targetType,
+                status,
+            };
 
-            if (error) throw error;
+            if (targetType === "course") insertData.course_id = targetId;
+            if (targetType === "instructor") insertData.instructor_id = targetId;
 
-            // حدّث الـ rating في الكورس
-            const { data: reviews } = await supabase
-                .from("reviews")
-                .select("rating")
-                .eq("course_id", courseId);
+            const { error: insertError } = await supabase.from("reviews").insert(insertData);
+            if (insertError) throw insertError;
 
-            if (reviews?.length) {
-                const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
-                await supabase
+            // Update course rating if it's a course
+            if (targetType === "course" && targetId) {
+                const { data: reviews } = await supabase
+                    .from("reviews")
+                    .select("rating")
+                    .eq("course_id", targetId)
+                    .eq("status", "approved");
+
+                if (reviews?.length) {
+                    const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+                    await supabase
+                        .from("courses")
+                        .update({ rating: Math.round(avg * 10) / 10 })
+                        .eq("id", targetId);
+                }
+
+                // Notify Instructor
+                const { data: courseData } = await supabase
                     .from("courses")
-                    .update({ rating: Math.round(avg * 10) / 10 })
-                    .eq("id", courseId);
-            }
+                    .select("title, instructor_id")
+                    .eq("id", targetId)
+                    .single();
 
-            setDone(true);
-            // ✅ جيب المدرس بتاع الكورس + اسم الطالب
-            const { data: courseData } = await supabase
-                .from("courses")
-                .select("title, instructor_id")
-                .eq("id", courseId)
-                .single();
-
-            const { data: studentProfile } = await supabase
-                .from("profiles")
-                .select("full_name")
-                .eq("id", user.id)
-                .single();
-
-            const stars = "⭐".repeat(rating);
-            const studentName = studentProfile?.full_name ?? "أحد الطلاب";
-
-            // ✅ إشعار للمدرس
-            if (courseData?.instructor_id) {
-                await supabase.from("notifications").insert({
-                    user_id: courseData.instructor_id,
-                    type: "enrollment",
-                    title: `تقييم جديد على كورسك ${stars}`,
-                    body: `${studentName} كتب: "${comment.slice(0, 60)}${comment.length > 60 ? "..." : ""}"`,
-                    link: `/courses/${courseId}`,
-                });
+                if (courseData?.instructor_id) {
+                    const stars = "⭐".repeat(rating);
+                    await supabase.from("notifications").insert({
+                        user_id: courseData.instructor_id,
+                        type: "announcement",
+                        title: `تقييم جديد على كورسك ${stars}`,
+                        body: `تقييم جديد: "${comment.slice(0, 60)}"`,
+                        link: `/courses/${targetId}`,
+                    });
+                }
             }
 
             setDone(true);
             onSuccess?.();
-
         } catch (err) {
             setError(err.message);
         } finally {
@@ -88,7 +87,11 @@ export default function ReviewForm({ courseId, onSuccess }) {
         return (
             <div className={"ReviewForm-success"}>
                 <div>🎉</div>
-                <p>شكراً! تم إرسال تقييمك بنجاح</p>
+                <p>
+                    {targetType === "platform" 
+                        ? "شكراً! تم إرسال تقييمك بنجاح وهو الآن قيد المراجعة." 
+                        : "شكراً! تم إرسال تقييمك بنجاح"}
+                </p>
             </div>
         );
     }
@@ -116,7 +119,7 @@ export default function ReviewForm({ courseId, onSuccess }) {
             {/* Comment */}
             <textarea
                 className={"ReviewForm-textarea"}
-                placeholder="شاركنا رأيك في الكورس..."
+                placeholder="شاركنا رأيك..."
                 value={comment}
                 onChange={e => setComment(e.target.value)}
                 rows={4}

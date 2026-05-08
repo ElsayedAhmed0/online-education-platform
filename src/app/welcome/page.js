@@ -60,7 +60,7 @@ export default async function WelcomePage() {
                 </div>
                 
                 <div className="Welcome-actions">
-                    <Link href="/courses" className="Welcome-ctaBtn">
+                    <Link href="/#courses" className="Welcome-ctaBtn">
                         تصفح الكورسات الآن
                     </Link>
                 </div>

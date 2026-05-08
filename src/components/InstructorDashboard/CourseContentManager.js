@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
+import ExamManagerModal from "./ExamManagerModal";
 
 function getEmbedUrl(url) {
     if (!url) return null;
@@ -223,6 +224,7 @@ export default function CourseContentManager({ course, initialSections, userId }
     // Modals state
     const [sectionModal, setSectionModal] = useState(null); // null | "add" | section obj
     const [lessonModal, setLessonModal] = useState(null);   // null | { sectionId } | { sectionId, lesson }
+    const [examModal, setExamModal] = useState(null);       // null | { lessonId, isPopupMode }
     const [deleteConfirm, setDeleteConfirm] = useState(null); // null | { type, id, title }
     const [toast, setToast] = useState("");
 
@@ -245,18 +247,41 @@ export default function CourseContentManager({ course, initialSections, userId }
         setExpandedSections(p => ({ ...p, [id]: !p[id] }));
 
     const handleDeleteSection = async (sectionId) => {
-        await supabase.from("lessons").delete().eq("section_id", sectionId);
-        await supabase.from("sections").delete().eq("id", sectionId);
-        setDeleteConfirm(null);
-        showToast("✅ تم حذف القسم");
-        refresh();
+        try {
+            const res = await fetch("/api/instructor/delete-content", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ type: "section", id: sectionId }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+
+            setDeleteConfirm(null);
+            showToast("✅ تم حذف القسم");
+            refresh();
+        } catch (err) {
+            alert("خطأ أثناء الحذف: " + err.message);
+            setDeleteConfirm(null);
+        }
     };
 
     const handleDeleteLesson = async (lessonId) => {
-        await supabase.from("lessons").delete().eq("id", lessonId);
-        setDeleteConfirm(null);
-        showToast("✅ تم حذف الدرس");
-        refresh();
+        try {
+            const res = await fetch("/api/instructor/delete-content", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ type: "lesson", id: lessonId }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+
+            setDeleteConfirm(null);
+            showToast("✅ تم حذف الدرس");
+            refresh();
+        } catch (err) {
+            alert("خطأ أثناء الحذف: " + err.message);
+            setDeleteConfirm(null);
+        }
     };
 
     const totalLessons = sections.reduce((s, sec) => s + (sec.lessons?.length ?? 0), 0);
@@ -406,6 +431,18 @@ export default function CourseContentManager({ course, initialSections, userId }
                                                         </div>
                                                     </div>
                                                     <div className="CM-lessonActions">
+                                                        {lesson.type === "quiz" && (
+                                                            <button className="CM-iconBtn CM-editBtn"
+                                                                style={{ width: "auto", padding: "0 8px", fontSize: "12px", background: "rgba(16,185,129,0.2)", color: "#10B981" }}
+                                                                onClick={() => setExamModal({ lessonId: lesson.id, isPopupMode: false })}
+                                                                title="إدارة أسئلة الامتحان">📝 إدارة الأسئلة</button>
+                                                        )}
+                                                        {lesson.type === "video" && (
+                                                            <button className="CM-iconBtn CM-editBtn"
+                                                                style={{ width: "auto", padding: "0 8px", fontSize: "12px", background: "rgba(139,92,246,0.2)", color: "#A78BFA" }}
+                                                                onClick={() => setExamModal({ lessonId: lesson.id, isPopupMode: true })}
+                                                                title="إضافة سؤال سريع Pop-up">⏱️ سؤال سريع</button>
+                                                        )}
                                                         <button className="CM-iconBtn CM-editBtn"
                                                             onClick={() => setLessonModal({ sectionId: sec.id, lesson })}
                                                             title="تعديل">✏️</button>
@@ -447,6 +484,14 @@ export default function CourseContentManager({ course, initialSections, userId }
                     lesson={lessonModal.lesson ?? null}
                     onClose={() => setLessonModal(null)}
                     onSuccess={() => { refresh(); showToast("✅ تم حفظ الدرس"); }}
+                />
+            )}
+
+            {examModal && (
+                <ExamManagerModal
+                    lessonId={examModal.lessonId}
+                    isPopupMode={examModal.isPopupMode}
+                    onClose={() => setExamModal(null)}
                 />
             )}
 

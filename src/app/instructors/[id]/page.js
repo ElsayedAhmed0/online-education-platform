@@ -40,7 +40,7 @@ export default async function InstructorProfilePage({ params }) {
     const adminSupabase = createAdminClient();
     const { data: courses } = await adminSupabase
         .from("courses")
-        .select("id, title, description, thumbnail_url, price, discount_price, level, category, status, created_at")
+        .select("id, title, description, thumbnail, price, old_price, level, category, status, created_at")
         .eq("instructor_id", id)
         .order("created_at", { ascending: false });
 
@@ -74,11 +74,24 @@ export default async function InstructorProfilePage({ params }) {
     // إجمالي الطلاب
     const totalStudents = coursesWithStats.reduce((sum, c) => sum + c.studentsCount, 0);
 
+    // جلب تقييمات المدرس
+    const { data: reviews } = await adminSupabase
+        .from("reviews")
+        .select("id, rating, comment, created_at, profiles!reviews_user_id_fkey(name, avatar_url)")
+        .eq("instructor_id", id)
+        .eq("status", "approved")
+        .order("created_at", { ascending: false });
+
+    // جلب المستخدم الحالي (null لو مش مسجل دخول)
+    const { data: { user } } = await supabase.auth.getUser();
+
     return (
         <InstructorProfileClient
             instructor={instructor}
             courses={coursesWithStats}
             totalStudents={totalStudents}
+            reviews={reviews ?? []}
+            currentUserId={user?.id ?? null}
         />
     );
 }

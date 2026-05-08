@@ -142,12 +142,6 @@ export default function ChatIcon() {
                     {/* Header */}
                     <div className="ChatIcon-header">
                         <span className="ChatIcon-headerTitle">الرسائل</span>
-                        <button
-                            className="ChatIcon-newChat"
-                            onClick={() => { setOpen(false); router.push("/chat?new=1"); }}
-                        >
-                            + محادثة جديدة
-                        </button>
                     </div>
 
                     {/* List */}
