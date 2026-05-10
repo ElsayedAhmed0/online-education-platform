@@ -115,6 +115,33 @@ export default function InstructorDashboardClient({
         }
     };
 
+    const handleDeleteCourse = async (courseId, courseTitle) => {
+        if (!window.confirm(`هل أنت متأكد من حذف كورس "${courseTitle}"؟\nسيتم حذف جميع الدروس والبيانات المرتبطة به نهائياً!`)) {
+            return;
+        }
+
+        try {
+            const res = await fetch("/api/instructor/delete-course", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ courseId }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                alert("❌ خطأ: " + (data.error || "فشل حذف الكورس"));
+                return;
+            }
+
+            alert("✅ تم حذف الكورس بنجاح");
+            router.refresh(); // لإعادة تحميل البيانات من السيرفر
+
+        } catch (err) {
+            alert("❌ حدث خطأ: " + err.message);
+        }
+    };
+
     const avgRating = courses.length > 0
         ? (courses.reduce((sum, c) => sum + (c.rating ?? 0), 0) / courses.length).toFixed(1)
         : 0;
@@ -331,6 +358,21 @@ export default function InstructorDashboardClient({
                                         className={"InstructorDashboard-addLessonBtn"}
                                         onClick={() => router.push(`/instructor/courses/${c.id}/manage`)}
                                     >+ إضافة درس</button>
+                                    <button
+                                        className={"InstructorDashboard-deleteCourseBtn"}
+                                        style={{
+                                            background: "rgba(239,68,68,0.1)",
+                                            color: "#EF4444",
+                                            border: "1px solid rgba(239,68,68,0.2)",
+                                            borderRadius: "8px",
+                                            padding: "8px 16px",
+                                            cursor: "pointer",
+                                            fontWeight: 700,
+                                            fontSize: "13px",
+                                            marginRight: "8px"
+                                        }}
+                                        onClick={() => handleDeleteCourse(c.id, c.title)}
+                                    >🗑️ مسح</button>
                                 </div>
                             );
                         })}

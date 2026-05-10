@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import LandingEditor from "./LandingEditor";
+import AboutUsEditor from "./AboutUsEditor";
 import NotificationsTab from "@/components/common/NotificationsTab";
 
 
@@ -165,6 +166,7 @@ export default function AdminDashboardClient({
             { id: "courses", icon: "📚", label: "الكورسات" },
             { id: "finance", icon: "💰", label: "المالية" },
             { id: "landing", icon: "🔊", label: "الصفحة الرئيسية", badge: pendingReviews.length },
+            { id: "about", icon: "📜", label: "عن المنصة" },
             { id: "notifications", icon: "🔔", label: "الإشعارات", badge: unreadCount },
           ].map(item => (
             <div
@@ -221,7 +223,8 @@ export default function AdminDashboardClient({
             { id: "users", label: "المستخدمون" },
             { id: "courses", label: "الكورسات" },
             { id: "finance", label: "المالية" },
-            { id: "landing", label: `🔊 الصفحة الرئيسية${pendingReviews.length > 0 ? ` (${pendingReviews.length})` : ""}` },
+            { id: "landing", label: `🔊 الرئيسية${pendingReviews.length > 0 ? ` (${pendingReviews.length})` : ""}` },
+            { id: "about", label: "📜 عن المنصة" },
             { id: "notifications", label: `🔔 الإشعارات${unreadCount > 0 ? ` (${unreadCount})` : ""}` },
           ].map(t => (
             <button
@@ -405,6 +408,11 @@ export default function AdminDashboardClient({
             platformReviews={platformReviews}
             onUpdateReviewStatus={updateReviewStatus}
           />
+        )}
+
+        {/* About Us Editor */}
+        {activeTab === "about" && (
+          <AboutUsEditor siteSettings={siteSettings} />
         )}
 
         {/* Notifications */}
