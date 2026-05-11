@@ -80,7 +80,7 @@ export default function NavBar() {
                     <span className={"NavBar-logoName"}>Edu<span>Platform</span></span>
                 </Link>
 
-                {/* Links */}
+                {/* Links - Hidden on Mobile */}
                 <div className={"NavBar-links"}>
                     {NAV_LINKS.map(l => (
                         <Link
@@ -97,9 +97,8 @@ export default function NavBar() {
                 <div className={"NavBar-actions"}>
                     {user ? (
                         <div className={"NavBar-userMenu"}>
-                            {/* Chat */}
+                            {/* Chat & Bell - Keep on mobile but maybe hide one if too crowded */}
                             <ChatIcon />
-                            {/* Bell */}
                             <NotificationBell />
 
                             {/* Avatar + Role Badge */}
@@ -110,7 +109,6 @@ export default function NavBar() {
                                         : <span>{profile?.name?.[0] ?? "U"}</span>
                                     }
                                 </div>
-                                {/* Badge نوع الأكونت */}
                                 <span
                                     className={"NavBar-roleBadge"}
                                     style={{ background: roleCfg.bg, color: roleCfg.color }}
@@ -119,14 +117,12 @@ export default function NavBar() {
                                 </span>
                             </div>
 
-                            {/* Dropdown */}
+                            {/* Dropdown (Desktop) */}
                             {menuOpen && (
                                 <div className={"NavBar-dropdown"}>
-                                    {/* Header */}
                                     <div className={"NavBar-dropdownHeader"}>
                                         <strong>{profile?.name}</strong>
                                         <span>{user.email}</span>
-                                        {/* نوع الأكونت جوه الـ dropdown */}
                                         <span
                                             className={"NavBar-dropdownRolePill"}
                                             style={{ background: roleCfg.bg, color: roleCfg.color }}
@@ -134,10 +130,7 @@ export default function NavBar() {
                                             {roleCfg.icon} {roleCfg.label}
                                         </span>
                                     </div>
-
                                     <div className={"NavBar-dropdownDivider"} />
-
-                                    {/* Links حسب الدور */}
                                     {profile?.role === "student" && (
                                         <Link href="/dashboard" className={"NavBar-dropdownItem"} onClick={() => setMenuOpen(false)}>
                                             🎓 داشبورد الطالب
@@ -153,13 +146,10 @@ export default function NavBar() {
                                             🛡 لوحة الأدمن
                                         </Link>
                                     )}
-
                                     <Link href="/profile" className={"NavBar-dropdownItem"} onClick={() => setMenuOpen(false)}>
                                         👤 الملف الشخصي
                                     </Link>
-
                                     <div className={"NavBar-dropdownDivider"} />
-
                                     <button className={"NavBar-dropdownLogout"} onClick={handleLogout}>
                                         تسجيل الخروج
                                     </button>
@@ -167,11 +157,93 @@ export default function NavBar() {
                             )}
                         </div>
                     ) : (
-                        <>
+                        <div className="NavBar-authBtns">
                             <Link href="/login" className={"NavBar-btnLogin"}>دخول</Link>
                             <Link href="/register" className={"NavBar-btnRegister"}>إنشاء حساب</Link>
-                        </>
+                        </div>
                     )}
+
+                    {/* Hamburger Button */}
+                    <button 
+                        className={`NavBar-hamburger ${menuOpen ? 'active' : ''}`}
+                        onClick={() => setMenuOpen(!menuOpen)}
+                    >
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                </div>
+
+                {/* Mobile Menu Drawer */}
+                <div className={`NavBar-mobileMenu ${menuOpen ? 'open' : ''}`}>
+                    <div className="NavBar-mobileMenuContent">
+                        <div className="NavBar-mobileHeader">
+                            <Link href="/" className={"NavBar-logo"} onClick={() => setMenuOpen(false)}>
+                                <div className={"NavBar-logoIcon"}>E</div>
+                                <span className={"NavBar-logoName"}>Edu<span>Platform</span></span>
+                            </Link>
+                            <button className="NavBar-closeMenu" onClick={() => setMenuOpen(false)}>✕</button>
+                        </div>
+                        
+                        <div className="NavBar-mobileLinks">
+                            {NAV_LINKS.map(l => (
+                                <Link
+                                    key={l.href}
+                                    href={l.href}
+                                    className={`${"NavBar-mobileLink"} ${pathname === l.href ? "active" : ""}`}
+                                    onClick={() => setMenuOpen(false)}
+                                >
+                                    {l.label}
+                                </Link>
+                            ))}
+                        </div>
+
+                        {user ? (
+                            <div className="NavBar-mobileUserSection">
+                                <div className="NavBar-mobileUserInfo">
+                                    <div className="NavBar-avatar">
+                                        {profile?.avatar_url
+                                            ? <img src={profile.avatar_url} alt={profile.name} />
+                                            : <span>{profile?.name?.[0] ?? "U"}</span>
+                                        }
+                                    </div>
+                                    <div className="NavBar-mobileUserDetails">
+                                        <strong>{profile?.name}</strong>
+                                        <span>{user.email}</span>
+                                    </div>
+                                </div>
+                                
+                                <div className="NavBar-mobileDropdownLinks">
+                                    {profile?.role === "student" && (
+                                        <Link href="/dashboard" className={"NavBar-mobileDropdownItem"} onClick={() => setMenuOpen(false)}>
+                                            🎓 داشبورد الطالب
+                                        </Link>
+                                    )}
+                                    {profile?.role === "instructor" && (
+                                        <Link href="/instructor/dashboard" className={"NavBar-mobileDropdownItem"} onClick={() => setMenuOpen(false)}>
+                                            📚 داشبورد المدرس
+                                        </Link>
+                                    )}
+                                    {profile?.role === "admin" && (
+                                        <Link href="/admin/dashboard" className={"NavBar-mobileDropdownItem"} onClick={() => setMenuOpen(false)}>
+                                            🛡 لوحة الأدمن
+                                        </Link>
+                                    )}
+                                    <Link href="/profile" className={"NavBar-mobileDropdownItem"} onClick={() => setMenuOpen(false)}>
+                                        👤 الملف الشخصي
+                                    </Link>
+                                    <button className={"NavBar-mobileLogout"} onClick={handleLogout}>
+                                        تسجيل الخروج
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="NavBar-mobileAuth">
+                                <Link href="/login" className={"NavBar-btnLogin"} onClick={() => setMenuOpen(false)}>دخول</Link>
+                                <Link href="/register" className={"NavBar-btnRegister"} onClick={() => setMenuOpen(false)}>إنشاء حساب</Link>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </nav>

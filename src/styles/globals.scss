@@ -1,5 +1,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
 
+// --- Responsive Breakpoints ---
+$xs: 440px;
+$sm: 576px;
+$md: 768px;
+$lg: 992px;
+$xl: 1200px;
+
+@mixin respond-to($breakpoint) {
+    @if $breakpoint == xs { @media (max-width: #{$xs}) { @content; } }
+    @else if $breakpoint == sm { @media (max-width: #{$sm}) { @content; } }
+    @else if $breakpoint == md { @media (max-width: #{$md}) { @content; } }
+    @else if $breakpoint == lg { @media (max-width: #{$lg}) { @content; } }
+    @else if $breakpoint == xl { @media (max-width: #{$xl}) { @content; } }
+}
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -329,6 +344,10 @@ body {
         box-shadow: 0 10px 28px var(--color-19);
     }
 
+    @include respond-to(sm) {
+        padding: 16px;
+    }
+
     &-bar {
         position: absolute;
         bottom: 0;
@@ -374,6 +393,11 @@ body {
         max-width: 520px;
         max-height: 85vh;
         overflow-y: auto;
+
+        @include respond-to(md) {
+            padding: 20px;
+            max-width: 95%;
+        }
     }
 }
 
@@ -409,18 +433,42 @@ body {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 14px;
+
+    @include respond-to(sm) {
+        grid-template-columns: 1fr;
+    }
 }
 
 .grid-3 {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     gap: 14px;
+
+    @include respond-to(md) {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    @include respond-to(sm) {
+        grid-template-columns: 1fr;
+    }
 }
 
 .grid-4 {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 14px;
+
+    @include respond-to(lg) {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    @include respond-to(md) {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    @include respond-to(sm) {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* ── Page layout with sidebar ── */
@@ -428,6 +476,10 @@ body {
     display: grid;
     grid-template-columns: 220px 1fr;
     min-height: 100vh;
+
+    @include respond-to(md) {
+        grid-template-columns: 1fr;
+    }
 
     .sidebar {
         background: var(--bg-surface);
@@ -439,6 +491,19 @@ body {
         top: 0;
         height: 100vh;
         overflow-y: auto;
+
+        @include respond-to(md) {
+            position: relative;
+            height: auto;
+            border-left: none;
+            border-bottom: 1px solid var(--border);
+            padding: 10px;
+            flex-direction: row;
+            overflow-x: auto;
+            gap: 10px;
+            
+            &::-webkit-scrollbar { display: none; }
+        }
     }
 
     .main-content {
@@ -490,15 +555,35 @@ body {
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 100px 20px;
+    padding: 100px 24px;
     background: var(--bg-page);
     min-height: 100vh;
     color: var(--text-primary);
+
+    @include respond-to(md) {
+        padding: 80px 20px;
+    }
+
+    @include respond-to(xs) {
+        padding: 60px 16px;
+    }
 
     .home-title {
         font-family: var(--font);
         font-size: 48px;
         font-weight: 800;
+
+        @include respond-to(md) {
+            font-size: 32px;
+        }
+
+        @include respond-to(sm) {
+            font-size: 28px;
+        }
+
+        @include respond-to(xs) {
+            font-size: 24px;
+        }
     }
 
     .home-subtitle {
@@ -506,6 +591,12 @@ body {
         font-size: 18px;
         margin-top: 20px;
         color: var(--text-secondary);
+        max-width: 600px;
+
+        @include respond-to(md) {
+            font-size: 15px;
+            margin-top: 16px;
+        }
     }
 }
 
@@ -902,6 +993,10 @@ body {
     background: var(--bg-page);
     direction: rtl;
     font-family: var(--font);
+
+    @include respond-to(md) {
+        grid-template-columns: 1fr;
+    }
 }
 
 .auth-formSide {
@@ -909,6 +1004,15 @@ body {
     flex-direction: column;
     justify-content: center;
     padding: 48px 56px;
+
+    @include respond-to(md) {
+        padding: 40px 24px;
+        order: 2;
+    }
+
+    @include respond-to(xs) {
+        padding: 32px 16px;
+    }
 }
 
 .auth-logo {
@@ -1074,6 +1178,12 @@ body {
     align-items: center;
     justify-content: center;
     padding: 48px;
+
+    @include respond-to(md) {
+        padding: 40px 24px;
+        order: 1;
+        min-height: 300px;
+    }
 }
 
 .auth-visualContent {
@@ -6555,19 +6665,356 @@ body {
 
 // ***********************
 /* Role Badge في الـ NavBar */
+.NavBar-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 72px;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    z-index: 1000;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(0px);
+
+    &.NavBar-scrolled {
+        height: 64px;
+        background: rgba(10, 8, 30, 0.85);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border);
+    }
+}
+
+.NavBar-container {
+    width: 100%;
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    @include respond-to(md) {
+        padding: 0 16px;
+    }
+
+    @include respond-to(xs) {
+        padding: 0 12px;
+    }
+}
+
+.NavBar-links {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+
+    @include respond-to(lg) {
+        gap: 20px;
+    }
+
+    @include respond-to(md) {
+        display: none;
+    }
+}
+
+.NavBar-link {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.2s;
+
+    &:hover {
+        color: var(--text-primary);
+    }
+
+    &.NavBar-linkActive {
+        color: var(--primary-light);
+    }
+}
+
+.NavBar-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    @include respond-to(md) {
+        gap: 10px;
+    }
+}
+
+.NavBar-authBtns {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    @include respond-to(md) {
+        display: none;
+    }
+}
+
 .NavBar-avatarWrap {
     display: flex;
     align-items: center;
     gap: 8px;
     cursor: pointer;
+    position: relative;
+
+    @include respond-to(md) {
+        .NavBar-roleBadge {
+            display: none;
+        }
+    }
+}
+
+.NavBar-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--bg-card-hover);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 2px solid var(--border);
+    
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    span {
+        font-weight: 800;
+        color: var(--primary-light);
+    }
 }
 
 .NavBar-roleBadge {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
-    padding: 4px 10px;
+    padding: 3px 10px;
     border-radius: 20px;
     white-space: nowrap;
+}
+
+.NavBar-hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 24px;
+    height: 18px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 1001;
+
+    span {
+        width: 100%;
+        height: 2px;
+        background: var(--text-primary);
+        border-radius: 2px;
+        transition: all 0.3s ease;
+    }
+
+    @include respond-to(md) {
+        display: flex;
+    }
+
+    &.active {
+        span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+        span:nth-child(2) { opacity: 0; }
+        span:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+    }
+}
+
+/* Mobile Menu Drawer */
+.NavBar-mobileMenu {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 100%;
+    height: 100vh;
+    background: var(--bg-page);
+    z-index: 1100;
+    transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 24px;
+
+    &.open {
+        right: 0;
+    }
+}
+
+.NavBar-mobileMenuContent {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.NavBar-mobileHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 40px;
+}
+
+.NavBar-closeMenu {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.NavBar-mobileLinks {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    margin-bottom: 40px;
+}
+
+.NavBar-mobileLink {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text-secondary);
+    text-decoration: none;
+
+    &.active {
+        color: var(--primary-light);
+    }
+}
+
+.NavBar-mobileUserSection {
+    border-top: 1px solid var(--border);
+    padding-top: 32px;
+}
+
+.NavBar-mobileUserInfo {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.NavBar-mobileUserDetails {
+    display: flex;
+    flex-direction: column;
+
+    strong { font-size: 18px; color: var(--text-primary); }
+    span { font-size: 14px; color: var(--text-muted); }
+}
+
+.NavBar-mobileDropdownLinks {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.NavBar-mobileDropdownItem {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.NavBar-mobileLogout {
+    margin-top: 16px;
+    color: var(--danger);
+    font-family: var(--font);
+    font-size: 16px;
+    font-weight: 700;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: right;
+    padding: 0;
+}
+
+.NavBar-mobileAuth {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: auto;
+}
+
+/* Rest of the dropdown styles */
+.NavBar-dropdown {
+    position: absolute;
+    top: calc(100% + 15px);
+    left: 0;
+    width: 240px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    padding: 12px;
+    z-index: 1000;
+    animation: dropdownFade 0.2s ease;
+
+    @include respond-to(md) {
+        display: none; // Use mobile drawer instead
+    }
+}
+
+@keyframes dropdownFade {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.NavBar-dropdownHeader {
+    padding: 8px 12px 12px;
+    display: flex;
+    flex-direction: column;
+
+    strong { font-size: 14px; color: var(--text-primary); }
+    span { font-size: 12px; color: var(--text-muted); }
+}
+
+.NavBar-dropdownDivider {
+    height: 1px;
+    background: var(--border);
+    margin: 8px 0;
+}
+
+.NavBar-dropdownItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 0.2s;
+
+    &:hover {
+        background: var(--bg-card-hover);
+        color: var(--text-primary);
+    }
+}
+
+.NavBar-dropdownLogout {
+    width: 100%;
+    padding: 10px 12px;
+    background: none;
+    border: none;
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--danger);
+    text-align: right;
+    cursor: pointer;
+    border-radius: var(--radius-md);
+
+    &:hover {
+        background: rgba(239, 68, 68, 0.1);
+    }
 }
 
 .NavBar-dropdownRolePill {
@@ -7727,6 +8174,14 @@ body {
     color: var(--text-primary);
     line-height: 1.2;
 
+    @include respond-to(md) {
+        font-size: 32px;
+    }
+
+    @include respond-to(sm) {
+        font-size: 28px;
+    }
+
     span {
         background: linear-gradient(135deg, var(--primary-light), var(--secondary));
         -webkit-background-clip: text;
@@ -7815,6 +8270,12 @@ body {
     border-radius: var(--radius-xl);
     padding: 20px 40px;
     margin-bottom: 40px;
+
+    @include respond-to(md) {
+        flex-direction: column;
+        gap: 20px;
+        padding: 20px;
+    }
 }
 
 .InstructorsPage-stat {
@@ -7908,6 +8369,10 @@ body {
     transition: transform .25s, box-shadow .25s, border-color .25s;
     overflow: hidden;
     text-align: center;
+
+    @include respond-to(xs) {
+        padding: 24px 16px 20px;
+    }
 
     &:hover {
         transform: translateY(-6px);
@@ -8131,6 +8596,19 @@ body {
     border-radius: var(--radius-xl);
     padding: 32px 36px;
     backdrop-filter: blur(12px);
+
+    @include respond-to(md) {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 24px;
+        padding: 24px;
+    }
+
+    @include respond-to(xs) {
+        padding: 20px 16px;
+        gap: 20px;
+    }
 }
 
 /* Avatar */
@@ -8273,6 +8751,10 @@ body {
     height: 40px;
     background: var(--border);
     flex-shrink: 0;
+
+    @include respond-to(sm) {
+        display: none;
+    }
 }
 
 /* ── Container ── */
