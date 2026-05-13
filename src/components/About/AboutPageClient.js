@@ -19,14 +19,14 @@ export default function AboutPageClient({ aboutData }) {
     return (
         <div className="page">
             {/* ══ HERO ══ */}
-            <section className="hero" style={{ minHeight: "auto", padding: "120px 0 80px" }}>
+            <section className="about-hero hero">
                 <div className="heroGlow" />
                 <div className="container" style={{ textAlign: "center" }}>
                     <div className="heroBadge">📜 تعرف علينا</div>
-                    <h1 className="heroTitle" style={{ fontSize: "clamp(2.5rem, 8vw, 4rem)" }}>
+                    <h1 className="heroTitle">
                         {data.hero_title}
                     </h1>
-                    <p className="heroSubtitle" style={{ maxWidth: "800px", margin: "20px auto 0" }}>
+                    <p className="heroSubtitle">
                         {data.hero_subtitle}
                     </p>
                 </div>
@@ -35,24 +35,8 @@ export default function AboutPageClient({ aboutData }) {
             {/* ══ DESCRIPTION ══ */}
             <section className="about-content" style={{ padding: "80px 0" }}>
                 <div className="container">
-                    <div style={{ 
-                        background: "rgba(255,255,255,0.03)", 
-                        border: "1px solid rgba(255,255,255,0.06)", 
-                        borderRadius: "24px", 
-                        padding: "50px",
-                        position: "relative",
-                        overflow: "hidden"
-                    }}>
-                        <div style={{ 
-                            position: "absolute", 
-                            top: "-20px", 
-                            right: "-20px", 
-                            width: "150px", 
-                            height: "150px", 
-                            background: "var(--primary)", 
-                            filter: "blur(100px)", 
-                            opacity: 0.1 
-                        }} />
+                    <div className="about-story-card">
+                        <div className="glow-dot" />
                         
                         <div style={{ maxWidth: "900px", margin: "0 auto", textAlign: "center" }}>
                             <h2 style={{ fontSize: "2rem", fontWeight: "bold", marginBottom: "30px", color: "var(--text-primary)" }}>قصتنا</h2>
@@ -67,13 +51,8 @@ export default function AboutPageClient({ aboutData }) {
             {/* ══ MISSION & VISION ══ */}
             <section style={{ padding: "40px 0" }}>
                 <div className="container">
-                    <div className="grid2" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "30px" }}>
-                        <div style={{ 
-                            background: "linear-gradient(135deg, rgba(99,102,241,0.1) 0%, rgba(255,255,255,0.02) 100%)", 
-                            border: "1px solid rgba(99,102,241,0.2)", 
-                            borderRadius: "20px", 
-                            padding: "40px"
-                        }}>
+                    <div className="about-mission-vision">
+                        <div className="about-info-card mission">
                             <div style={{ fontSize: "2.5rem", marginBottom: "20px" }}>🎯</div>
                             <h3 style={{ fontSize: "1.5rem", fontWeight: "bold", marginBottom: "15px", color: "#818CF8" }}>رسالتنا</h3>
                             <p style={{ fontSize: "1.1rem", lineHeight: "1.6", color: "rgba(255,255,255,0.8)", margin: 0 }}>
@@ -81,12 +60,7 @@ export default function AboutPageClient({ aboutData }) {
                             </p>
                         </div>
 
-                        <div style={{ 
-                            background: "linear-gradient(135deg, rgba(236,72,153,0.1) 0%, rgba(255,255,255,0.02) 100%)", 
-                            border: "1px solid rgba(236,72,153,0.2)", 
-                            borderRadius: "20px", 
-                            padding: "40px"
-                        }}>
+                        <div className="about-info-card vision">
                             <div style={{ fontSize: "2.5rem", marginBottom: "20px" }}>👁️‍🗨️</div>
                             <h3 style={{ fontSize: "1.5rem", fontWeight: "bold", marginBottom: "15px", color: "#EC4899" }}>رؤيتنا</h3>
                             <p style={{ fontSize: "1.1rem", lineHeight: "1.6", color: "rgba(255,255,255,0.8)", margin: 0 }}>
@@ -105,34 +79,10 @@ export default function AboutPageClient({ aboutData }) {
                         <p className="sectionSub">نحن نركز على الجودة وتجربة المستخدم قبل كل شيء</p>
                     </div>
 
-                    <div style={{ 
-                        display: "grid", 
-                        gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", 
-                        gap: "25px" 
-                    }}>
+                    <div className="about-features-grid">
                         {data.features.map((feature, i) => (
-                            <div key={i} style={{ 
-                                background: "rgba(255,255,255,0.03)", 
-                                border: "1px solid rgba(255,255,255,0.06)", 
-                                borderRadius: "20px", 
-                                padding: "30px",
-                                transition: "transform 0.3s ease",
-                                cursor: "default"
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.transform = "translateY(-10px)"}
-                            onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
-                            >
-                                <div style={{ 
-                                    fontSize: "2.5rem", 
-                                    marginBottom: "20px",
-                                    width: "70px",
-                                    height: "70px",
-                                    background: "rgba(255,255,255,0.05)",
-                                    borderRadius: "16px",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center"
-                                }}>{feature.icon}</div>
+                            <div key={i} className="about-feature-card">
+                                <div className="feature-icon-box">{feature.icon}</div>
                                 <h4 style={{ fontSize: "1.3rem", fontWeight: "bold", marginBottom: "12px", color: "var(--text-primary)" }}>{feature.title}</h4>
                                 <p style={{ fontSize: "1rem", lineHeight: "1.6", color: "rgba(255,255,255,0.6)", margin: 0 }}>
                                     {feature.description}
@@ -160,8 +110,6 @@ export default function AboutPageClient({ aboutData }) {
                     </div>
                 </div>
             </section>
-            
-            {/* Footer Copy (Since it's not a shared layout footer in some apps, but here it likely is, we include it if needed or trust the layout) */}
         </div>
     );
 }

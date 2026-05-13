@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase";
@@ -18,8 +18,11 @@ export default function NavBar() {
 
     const [user, setUser] = useState(null);
     const [profile, setProfile] = useState(null);
-    const [menuOpen, setMenuOpen] = useState(false);
+    const [dropdownOpen, setDropdownOpen] = useState(false);   // Desktop user dropdown
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // Mobile sidebar drawer
     const [scrolled, setScrolled] = useState(false);
+
+    const dropdownRef = useRef(null);
 
     useEffect(() => {
         supabase.auth.getUser().then(({ data: { user } }) => {
@@ -42,9 +45,18 @@ export default function NavBar() {
         const onScroll = () => setScrolled(window.scrollY > 20);
         window.addEventListener("scroll", onScroll);
 
+        // Close desktop dropdown when clicking outside
+        const handleClickOutside = (e) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+                setDropdownOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+
         return () => {
             subscription.unsubscribe();
             window.removeEventListener("scroll", onScroll);
+            document.removeEventListener("mousedown", handleClickOutside);
         };
     }, []);
 
@@ -52,7 +64,8 @@ export default function NavBar() {
         await supabase.auth.signOut();
         setUser(null);
         setProfile(null);
-        setMenuOpen(false);
+        setDropdownOpen(false);
+        setMobileMenuOpen(false);
         router.push("/");
     };
 
@@ -96,13 +109,13 @@ export default function NavBar() {
                 {/* Actions */}
                 <div className={"NavBar-actions"}>
                     {user ? (
-                        <div className={"NavBar-userMenu"}>
+                        <div className={"NavBar-userMenu"} ref={dropdownRef}>
                             {/* Chat & Bell - Keep on mobile but maybe hide one if too crowded */}
                             <ChatIcon />
                             <NotificationBell />
 
                             {/* Avatar + Role Badge */}
-                            <div className={"NavBar-avatarWrap"} onClick={() => setMenuOpen(!menuOpen)}>
+                            <div className={"NavBar-avatarWrap"} onClick={() => setDropdownOpen(!dropdownOpen)}>
                                 <div className={"NavBar-avatar"}>
                                     {profile?.avatar_url
                                         ? <img src={profile.avatar_url} alt={profile.name} />
@@ -118,7 +131,7 @@ export default function NavBar() {
                             </div>
 
                             {/* Dropdown (Desktop) */}
-                            {menuOpen && (
+                            {dropdownOpen && (
                                 <div className={"NavBar-dropdown"}>
                                     <div className={"NavBar-dropdownHeader"}>
                                         <strong>{profile?.name}</strong>
@@ -132,21 +145,21 @@ export default function NavBar() {
                                     </div>
                                     <div className={"NavBar-dropdownDivider"} />
                                     {profile?.role === "student" && (
-                                        <Link href="/dashboard" className={"NavBar-dropdownItem"} onClick={() => setMenuOpen(false)}>
+                                        <Link href="/dashboard" className={"NavBar-dropdownItem"} onClick={() => setDropdownOpen(false)}>
                                             🎓 داشبورد الطالب
                                         </Link>
                                     )}
                                     {profile?.role === "instructor" && (
-                                        <Link href="/instructor/dashboard" className={"NavBar-dropdownItem"} onClick={() => setMenuOpen(false)}>
+                                        <Link href="/instructor/dashboard" className={"NavBar-dropdownItem"} onClick={() => setDropdownOpen(false)}>
                                             📚 داشبورد المدرس
                                         </Link>
                                     )}
                                     {profile?.role === "admin" && (
-                                        <Link href="/admin/dashboard" className={"NavBar-dropdownItem"} onClick={() => setMenuOpen(false)}>
+                                        <Link href="/admin/dashboard" className={"NavBar-dropdownItem"} onClick={() => setDropdownOpen(false)}>
                                             🛡 لوحة الأدمن
                                         </Link>
                                     )}
-                                    <Link href="/profile" className={"NavBar-dropdownItem"} onClick={() => setMenuOpen(false)}>
+                                    <Link href="/profile" className={"NavBar-dropdownItem"} onClick={() => setDropdownOpen(false)}>
                                         👤 الملف الشخصي
                                     </Link>
                                     <div className={"NavBar-dropdownDivider"} />
@@ -165,8 +178,8 @@ export default function NavBar() {
 
                     {/* Hamburger Button */}
                     <button 
-                        className={`NavBar-hamburger ${menuOpen ? 'active' : ''}`}
-                        onClick={() => setMenuOpen(!menuOpen)}
+                        className={`NavBar-hamburger ${mobileMenuOpen ? 'active' : ''}`}
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                     >
                         <span></span>
                         <span></span>
@@ -175,14 +188,14 @@ export default function NavBar() {
                 </div>
 
                 {/* Mobile Menu Drawer */}
-                <div className={`NavBar-mobileMenu ${menuOpen ? 'open' : ''}`}>
+                <div className={`NavBar-mobileMenu ${mobileMenuOpen ? 'open' : ''}`}>
                     <div className="NavBar-mobileMenuContent">
                         <div className="NavBar-mobileHeader">
-                            <Link href="/" className={"NavBar-logo"} onClick={() => setMenuOpen(false)}>
+                            <Link href="/" className={"NavBar-logo"} onClick={() => setMobileMenuOpen(false)}>
                                 <div className={"NavBar-logoIcon"}>E</div>
                                 <span className={"NavBar-logoName"}>Edu<span>Platform</span></span>
                             </Link>
-                            <button className="NavBar-closeMenu" onClick={() => setMenuOpen(false)}>✕</button>
+                            <button className="NavBar-closeMenu" onClick={() => setMobileMenuOpen(false)}>✕</button>
                         </div>
                         
                         <div className="NavBar-mobileLinks">
@@ -191,7 +204,7 @@ export default function NavBar() {
                                     key={l.href}
                                     href={l.href}
                                     className={`${"NavBar-mobileLink"} ${pathname === l.href ? "active" : ""}`}
-                                    onClick={() => setMenuOpen(false)}
+                                    onClick={() => setMobileMenuOpen(false)}
                                 >
                                     {l.label}
                                 </Link>
@@ -215,21 +228,21 @@ export default function NavBar() {
                                 
                                 <div className="NavBar-mobileDropdownLinks">
                                     {profile?.role === "student" && (
-                                        <Link href="/dashboard" className={"NavBar-mobileDropdownItem"} onClick={() => setMenuOpen(false)}>
+                                        <Link href="/dashboard" className={"NavBar-mobileDropdownItem"} onClick={() => setMobileMenuOpen(false)}>
                                             🎓 داشبورد الطالب
                                         </Link>
                                     )}
                                     {profile?.role === "instructor" && (
-                                        <Link href="/instructor/dashboard" className={"NavBar-mobileDropdownItem"} onClick={() => setMenuOpen(false)}>
+                                        <Link href="/instructor/dashboard" className={"NavBar-mobileDropdownItem"} onClick={() => setMobileMenuOpen(false)}>
                                             📚 داشبورد المدرس
                                         </Link>
                                     )}
                                     {profile?.role === "admin" && (
-                                        <Link href="/admin/dashboard" className={"NavBar-mobileDropdownItem"} onClick={() => setMenuOpen(false)}>
+                                        <Link href="/admin/dashboard" className={"NavBar-mobileDropdownItem"} onClick={() => setMobileMenuOpen(false)}>
                                             🛡 لوحة الأدمن
                                         </Link>
                                     )}
-                                    <Link href="/profile" className={"NavBar-mobileDropdownItem"} onClick={() => setMenuOpen(false)}>
+                                    <Link href="/profile" className={"NavBar-mobileDropdownItem"} onClick={() => setMobileMenuOpen(false)}>
                                         👤 الملف الشخصي
                                     </Link>
                                     <button className={"NavBar-mobileLogout"} onClick={handleLogout}>
@@ -239,8 +252,8 @@ export default function NavBar() {
                             </div>
                         ) : (
                             <div className="NavBar-mobileAuth">
-                                <Link href="/login" className={"NavBar-btnLogin"} onClick={() => setMenuOpen(false)}>دخول</Link>
-                                <Link href="/register" className={"NavBar-btnRegister"} onClick={() => setMenuOpen(false)}>إنشاء حساب</Link>
+                                <Link href="/login" className={"NavBar-btnLogin"} onClick={() => setMobileMenuOpen(false)}>دخول</Link>
+                                <Link href="/register" className={"NavBar-btnRegister"} onClick={() => setMobileMenuOpen(false)}>إنشاء حساب</Link>
                             </div>
                         )}
                     </div>

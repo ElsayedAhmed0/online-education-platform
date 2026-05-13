@@ -31,6 +31,13 @@ export default function AdminDashboardClient({
   const [platformReviews, setPlatformReviews] = useState(initialPlatformReviews || []);
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const handleNav = (tab) => {
+    setActiveTab(tab);
+    if (tab === "notifications") setUnreadCount(0);
+    setDrawerOpen(false);
+  };
 
   const pendingReviews = platformReviews.filter(r => r.status === "pending");
 
@@ -122,24 +129,31 @@ export default function AdminDashboardClient({
   const totalInstructors = users.filter(u => u.role === "instructor").length;
   const pendingCourses = courses.filter(c => c.status === "review"); // ✅ من الـ state
   return (
-    <div className={"AdminDashboard-page"}>
+    <div className="AdminDashboard-page">
+      {/* ── Mobile top bar ── */}
+      <div className="AdminDashboard-mobileTopbar">
+        <button className="AdminDashboard-menuBtn" onClick={() => setDrawerOpen(true)} aria-label="فتح القائمة">☰</button>
+        <span className="AdminDashboard-mobileTitle">لوحة الأدمن</span>
+        <div className="AdminDashboard-mobileAvatar">🛡</div>
+      </div>
+
+      {/* ── Overlay ── */}
+      {drawerOpen && <div className="AdminDashboard-overlay" onClick={() => setDrawerOpen(false)} />}
+
       {/* Sidebar */}
-      <div className={"AdminDashboard-sidebar"}>
-        <div className={"AdminDashboard-logo"} onClick={() => router.push("/")} style={{ marginBottom: "8px" }}>
-          <div className={"AdminDashboard-logoIconAdmin"}>🛡</div>
+      <div className={`AdminDashboard-sidebar${drawerOpen ? " AdminDashboard-drawerOpen" : ""}`}>
+        <button className="AdminDashboard-closeDrawer" onClick={() => setDrawerOpen(false)}>✕</button>
+        <div className="AdminDashboard-logo" onClick={() => { router.push("/"); setDrawerOpen(false); }} style={{ marginBottom: "8px" }}>
+          <div className="AdminDashboard-logoIconAdmin">🛡</div>
           <div>
-            <div className={"AdminDashboard-logoName"}>EduPlatform</div>
-            <div className={"AdminDashboard-adminLabel"}>Admin Panel</div>
+            <div className="AdminDashboard-logoName">EduPlatform</div>
+            <div className="AdminDashboard-adminLabel">Admin Panel</div>
           </div>
         </div>
 
         {/* Admin Avatar */}
         <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "12px 16px", marginBottom: "8px" }}>
-          <label
-            htmlFor="avatarUploadAdmin"
-            title={uploadingAvatar ? "جاري الرفع..." : "تغيير الصورة"}
-            style={{ position: "relative", cursor: "pointer", display: "inline-block", borderRadius: "50%", flexShrink: 0 }}
-          >
+          <label htmlFor="avatarUploadAdmin" title={uploadingAvatar ? "جاري الرفع..." : "تغيير الصورة"} style={{ position: "relative", cursor: "pointer", display: "inline-block", borderRadius: "50%", flexShrink: 0 }}>
             {avatarUrl ? (
               <img src={avatarUrl} alt={profile?.name} style={{ width: "42px", height: "42px", borderRadius: "50%", objectFit: "cover", border: "2px solid #EF4444", display: "block" }} />
             ) : (
@@ -147,10 +161,6 @@ export default function AdminDashboardClient({
                 {(profile?.name ?? "").split(" ").map(w => w[0]).join("").slice(0, 3).toUpperCase() || "أ"}
               </div>
             )}
-            <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "opacity .2s", fontSize: "14px" }}
-              onMouseEnter={e => e.currentTarget.style.opacity = 1}
-              onMouseLeave={e => e.currentTarget.style.opacity = 0}
-            >{uploadingAvatar ? "⏳" : "📷"}</div>
             <input id="avatarUploadAdmin" type="file" accept="image/*" hidden disabled={uploadingAvatar} onChange={handleAvatarUpload} />
           </label>
           <div>
@@ -159,7 +169,7 @@ export default function AdminDashboardClient({
           </div>
         </div>
 
-        <nav className={"AdminDashboard-nav"}>
+        <nav className="AdminDashboard-nav">
           {[
             { id: "overview", icon: "⊞", label: "الداشبورد" },
             { id: "users", icon: "👥", label: "المستخدمون" },
@@ -169,49 +179,43 @@ export default function AdminDashboardClient({
             { id: "about", icon: "📜", label: "عن المنصة" },
             { id: "notifications", icon: "🔔", label: "الإشعارات", badge: unreadCount },
           ].map(item => (
-            <div
-              key={item.id}
-              className={`${"AdminDashboard-navItem"} ${activeTab === item.id ? "AdminDashboard-navActive" : ""}`}
-              onClick={() => { setActiveTab(item.id); if (item.id === "notifications") setUnreadCount(0); }}
+            <div key={item.id}
+              className={`AdminDashboard-navItem${activeTab === item.id ? " AdminDashboard-navActive" : ""}`}
+              onClick={() => handleNav(item.id)}
             >
-              <span>{item.icon}</span>
-              {item.label}
-              {item.badge > 0 && (
-                <span className={"AdminDashboard-navBadge"}>{item.badge > 9 ? "9+" : item.badge}</span>
-              )}
+              <span>{item.icon}</span>{item.label}
+              {item.badge > 0 && <span className="AdminDashboard-navBadge">{item.badge > 9 ? "9+" : item.badge}</span>}
             </div>
           ))}
         </nav>
 
-        <div className={"AdminDashboard-sidebarFooter"}>
-          <button className={"AdminDashboard-logoutBtn"} onClick={handleLogout}>
-            تسجيل الخروج
-          </button>
+        <div className="AdminDashboard-sidebarFooter">
+          <button className="AdminDashboard-logoutBtn" onClick={handleLogout}>تسجيل الخروج</button>
         </div>
       </div>
 
       {/* Main */}
-      <main className={"AdminDashboard-main"}>
-        <div className={"AdminDashboard-topbar"}>
+      <main className="AdminDashboard-main">
+        <div className="AdminDashboard-topbar">
           <div>
-            <h1 className={"AdminDashboard-pageTitle"}>لوحة تحكم الأدمن 🛡️</h1>
-            <p className={"AdminDashboard-pageSub"}>نظرة شاملة على المنصة</p>
+            <h1 className="AdminDashboard-pageTitle">لوحة تحكم الأدمن 🛡️</h1>
+            <p className="AdminDashboard-pageSub">نظرة شاملة على المنصة</p>
           </div>
-          <span className={"AdminDashboard-adminBadge"}>🛡 Super Admin</span>
+          <span className="AdminDashboard-adminBadge">🛡 Super Admin</span>
         </div>
 
         {/* KPIs */}
-        <div className={"AdminDashboard-kpiGrid"}>
+        <div className="AdminDashboard-kpiGrid">
           {[
             { icon: "👥", label: "إجمالي المستخدمين", val: users.length, color: "#818CF8" },
             { icon: "💰", label: "إجمالي الإيرادات", val: `${totalRevenue} ج.م`, color: "#10B981" },
             { icon: "📚", label: "الكورسات المنشورة", val: courses.filter(c => c.status === "live").length, color: "#FBBF24" },
             { icon: "⏳", label: "تنتظر المراجعة", val: pendingCourses.length, color: "#EC4899" },
           ].map(k => (
-            <div key={k.label} className={"AdminDashboard-kpiCard"}>
-              <div className={"AdminDashboard-kpiIcon"}>{k.icon}</div>
-              <div className={"AdminDashboard-kpiVal"} style={{ color: k.color }}>{k.val}</div>
-              <div className={"AdminDashboard-kpiLbl"}>{k.label}</div>
+            <div key={k.label} className="AdminDashboard-kpiCard">
+              <div className="AdminDashboard-kpiIcon">{k.icon}</div>
+              <div className="AdminDashboard-kpiVal" style={{ color: k.color }}>{k.val}</div>
+              <div className="AdminDashboard-kpiLbl">{k.label}</div>
             </div>
           ))}
         </div>

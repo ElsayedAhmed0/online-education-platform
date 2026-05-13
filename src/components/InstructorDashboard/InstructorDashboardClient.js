@@ -28,6 +28,13 @@ export default function InstructorDashboardClient({
     const [selectedCourseStudents, setSelectedCourseStudents] = useState(null);
     const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? null);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const [drawerOpen, setDrawerOpen] = useState(false);
+
+    const handleNav = (tab) => {
+        setActiveTab(tab);
+        if (tab === "notifications") setUnreadCount(0);
+        setDrawerOpen(false);
+    };
 
     useEffect(() => {
         supabase.auth.getUser().then(({ data: { user } }) => {
@@ -147,119 +154,89 @@ export default function InstructorDashboardClient({
         : 0;
 
     return (
-        <div className={"InstructorDashboard-page"}>
+        <div className="InstructorDashboard-page">
+            {/* ── Mobile top bar ── */}
+            <div className="InstructorDashboard-mobileTopbar">
+                <button
+                    className="InstructorDashboard-menuBtn"
+                    onClick={() => setDrawerOpen(true)}
+                    aria-label="فتح القائمة"
+                >☰</button>
+                <span className="InstructorDashboard-mobileTitle">لوحة المدرس</span>
+                <div className="InstructorDashboard-profileAvatar InstructorDashboard-mobileAvatar">
+                    {(profile?.name ?? "").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() || "م"}
+                </div>
+            </div>
+
+            {/* ── Overlay ── */}
+            {drawerOpen && (
+                <div className="InstructorDashboard-overlay" onClick={() => setDrawerOpen(false)} />
+            )}
+
             {/* Sidebar */}
-            <div className={"InstructorDashboard-sidebar"}>
-                <div className={"InstructorDashboard-logo"} onClick={() => router.push("/")}>
-                    <div className={"InstructorDashboard-logoIcon"}>E</div>
-                    <span className={"InstructorDashboard-logoName"}>Edu<span>Platform</span></span>
+            <div className={`InstructorDashboard-sidebar${drawerOpen ? " InstructorDashboard-drawerOpen" : ""}`}>
+                <button className="InstructorDashboard-closeDrawer" onClick={() => setDrawerOpen(false)}>✕</button>
+                <div className="InstructorDashboard-logo" onClick={() => { router.push("/"); setDrawerOpen(false); }}>
+                    <div className="InstructorDashboard-logoIcon">E</div>
+                    <span className="InstructorDashboard-logoName">Edu<span>Platform</span></span>
                 </div>
 
-                <div className={"InstructorDashboard-profile"}>
+                <div className="InstructorDashboard-profile">
                     <label
                         htmlFor="avatarUpload"
                         title={uploadingAvatar ? "جاري الرفع..." : "تغيير الصورة"}
-                        style={{
-                            position: "relative", cursor: "pointer", display: "inline-block",
-                            borderRadius: "50%", flexShrink: 0,
-                        }}
+                        style={{ position: "relative", cursor: "pointer", display: "inline-block", borderRadius: "50%", flexShrink: 0 }}
                     >
                         {avatarUrl ? (
-                            <img
-                                src={avatarUrl}
-                                alt={profile?.name}
-                                style={{
-                                    width: "48px", height: "48px", borderRadius: "50%",
-                                    objectFit: "cover", border: "2px solid var(--primary)",
-                                    display: "block",
-                                }}
+                            <img src={avatarUrl} alt={profile?.name}
+                                style={{ width: "48px", height: "48px", borderRadius: "50%", objectFit: "cover", border: "2px solid var(--primary)", display: "block" }}
                             />
                         ) : (
-                            <div className={"InstructorDashboard-profileAvatar"}>
+                            <div className="InstructorDashboard-profileAvatar">
                                 {(profile?.name ?? "").split(" ").map(w => w[0]).join("").slice(0, 3).toUpperCase() || "م"}
                             </div>
                         )}
-                        {/* Camera overlay */}
-                        <div style={{
-                            position: "absolute", inset: 0, borderRadius: "50%",
-                            background: "rgba(0,0,0,0.45)", display: "flex",
-                            alignItems: "center", justifyContent: "center",
-                            opacity: 0, transition: "opacity .2s",
-                            fontSize: "18px",
-                        }}
-                            onMouseEnter={e => e.currentTarget.style.opacity = 1}
-                            onMouseLeave={e => e.currentTarget.style.opacity = 0}
-                        >
-                            {uploadingAvatar ? "⏳" : "📷"}
-                        </div>
-                        <input
-                            id="avatarUpload"
-                            type="file"
-                            accept="image/*"
-                            hidden
-                            disabled={uploadingAvatar}
-                            onChange={handleAvatarUpload}
-                        />
+                        <input id="avatarUpload" type="file" accept="image/*" hidden disabled={uploadingAvatar} onChange={handleAvatarUpload} />
                     </label>
                     <div>
-                        <div className={"InstructorDashboard-profileName"}>{profile?.name}</div>
-                        <div className={"InstructorDashboard-profileRole"}>مدرس</div>
+                        <div className="InstructorDashboard-profileName">{profile?.name}</div>
+                        <div className="InstructorDashboard-profileRole">مدرس</div>
                     </div>
                 </div>
 
-                <nav className={"InstructorDashboard-nav"}>
+                <nav className="InstructorDashboard-nav">
                     {[
                         { id: "overview", label: "الداشبورد", icon: "⊞" },
                         { id: "courses", label: "كورساتي", icon: "📚" },
                         { id: "students", label: "طلابي", icon: "👥" },
                         { id: "earnings", label: "الأرباح", icon: "💰" },
+                        { id: "notifications", label: `الإشعارات${unreadCount > 0 ? ` (${unreadCount})` : ""}`, icon: "🔔" },
                     ].map(item => (
-                        <div
-                            key={item.id}
-                            className={`${"InstructorDashboard-navItem"} ${activeTab === item.id ? "InstructorDashboard-navActive" : ""}`}
-                            onClick={() => setActiveTab(item.id)}
+                        <div key={item.id}
+                            className={`InstructorDashboard-navItem${activeTab === item.id ? " InstructorDashboard-navActive" : ""}`}
+                            onClick={() => handleNav(item.id)}
                         >
-                            <span>{item.icon}</span>
-                            {item.label}
+                            <span>{item.icon}</span>{item.label}
                         </div>
                     ))}
-                    <div
-                        className={`${"InstructorDashboard-navItem"} ${activeTab === "notifications" ? "InstructorDashboard-navActive" : ""}`}
-                        onClick={() => { setActiveTab("notifications"); setUnreadCount(0); }}
-                    >
-                        <span>🔔</span> الإشعارات
-                        {unreadCount > 0 && (
-                            <span className={"InstructorDashboard-navBadge"}>{unreadCount > 9 ? "9+" : unreadCount}</span>
-                        )}
-                    </div>
-                    <div
-                        className={"InstructorDashboard-navItem"}
-                        onClick={() => router.push("/instructor/courses/create")}
-                    >
+                    <div className="InstructorDashboard-navItem" onClick={() => { router.push("/instructor/courses/create"); setDrawerOpen(false); }}>
                         <span>➕</span> إنشاء كورس
                     </div>
                 </nav>
 
-                <div className={"InstructorDashboard-sidebarFooter"}>
-                    <button className={"InstructorDashboard-logoutBtn"} onClick={handleLogout}>
-                        تسجيل الخروج
-                    </button>
+                <div className="InstructorDashboard-sidebarFooter">
+                    <button className="InstructorDashboard-logoutBtn" onClick={handleLogout}>تسجيل الخروج</button>
                 </div>
             </div>
 
             {/* Main */}
-            <main className={"InstructorDashboard-main"}>
-                <div className={"InstructorDashboard-topbar"}>
+            <main className="InstructorDashboard-main">
+                <div className="InstructorDashboard-topbar">
                     <div>
-                        <h1 className={"InstructorDashboard-pageTitle"}>
-                            مرحباً، {profile?.name?.split(" ")[0]} 👨‍🏫
-                        </h1>
-                        <p className={"InstructorDashboard-pageSub"}>لوحة تحكم المدرس</p>
+                        <h1 className="InstructorDashboard-pageTitle">مرحباً، {profile?.name?.split(" ")[0]} 👨‍🏫</h1>
+                        <p className="InstructorDashboard-pageSub">لوحة تحكم المدرس</p>
                     </div>
-                    <button
-                        className={"InstructorDashboard-createBtn"}
-                        onClick={() => router.push("/instructor/courses/create")}
-                    >
+                    <button className="InstructorDashboard-createBtn" onClick={() => router.push("/instructor/courses/create")}>
                         + إنشاء كورس
                     </button>
                 </div>

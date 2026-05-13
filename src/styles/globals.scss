@@ -15,6 +15,20 @@ $xl: 1200px;
     @else if $breakpoint == xl { @media (max-width: #{$xl}) { @content; } }
 }
 
+.hide-on-mobile {
+    @include respond-to(md) {
+        display: none !important;
+    }
+}
+
+.show-on-mobile {
+    display: none !important;
+    @include respond-to(md) {
+        display: block !important;
+    }
+}
+
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -509,6 +523,14 @@ body {
     .main-content {
         padding: 24px 24px 48px;
         overflow-x: hidden;
+
+        @include respond-to(md) {
+            padding: 20px 16px 40px;
+        }
+
+        @include respond-to(xs) {
+            padding: 16px 12px 32px;
+        }
     }
 }
 
@@ -1273,6 +1295,11 @@ body {
     gap: 40px;
     align-items: start;
     direction: rtl;
+
+    @include respond-to(lg) {
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
 }
 
 .CourseDetail-breadcrumb {
@@ -1356,6 +1383,11 @@ body {
     overflow: hidden;
     position: sticky;
     top: 80px;
+
+    @include respond-to(lg) {
+        position: static;
+        margin-top: 20px;
+    }
 }
 
 .CourseDetail-thumbnail {
@@ -2192,6 +2224,100 @@ body {
     min-height: 100vh;
     direction: rtl;
     font-family: var(--font);
+
+    @include respond-to(md) {
+        grid-template-columns: 1fr;
+        padding-top: 64px; // space for mobile topbar
+    }
+}
+
+/* ── Mobile top bar ── */
+.StudentDashboard-mobileTopbar {
+    display: none;
+
+    @include respond-to(md) {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: fixed;
+        top: 0;
+        right: 0;
+        left: 0;
+        height: 64px;
+        background: var(--bg-surface);
+        border-bottom: 1px solid var(--border);
+        padding: 0 16px;
+        z-index: 1050;
+        direction: rtl;
+        font-family: var(--font);
+    }
+}
+
+.StudentDashboard-menuBtn {
+    background: none;
+    border: none;
+    font-size: 22px;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: var(--radius-md);
+    transition: background .15s;
+
+    &:hover { background: var(--bg-card-hover); }
+}
+
+.StudentDashboard-mobileTitle {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.StudentDashboard-mobileAvatar {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 13px !important;
+}
+
+/* ── Overlay ── */
+.StudentDashboard-overlay {
+    display: none;
+
+    @include respond-to(md) {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.55);
+        z-index: 1100;
+        backdrop-filter: blur(2px);
+    }
+}
+
+/* ── Close drawer button ── */
+.StudentDashboard-closeDrawer {
+    display: none;
+
+    @include respond-to(md) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        width: 32px;
+        height: 32px;
+        background: var(--bg-card-hover);
+        border: 1px solid var(--border);
+        border-radius: 50%;
+        font-size: 14px;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all .15s;
+
+        &:hover {
+            background: var(--border);
+            color: var(--text-primary);
+        }
+    }
 }
 
 /* Sidebar */
@@ -2204,6 +2330,29 @@ body {
     position: sticky;
     top: 0;
     height: 100vh;
+    overflow-y: auto;
+
+    @include respond-to(md) {
+        position: fixed;
+        top: 0;
+        right: -280px;
+        width: 280px;
+        height: 100vh;
+        border-left: none;
+        border-right: 1px solid var(--border);
+        z-index: 1200;
+        transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 60px 16px 20px;
+        overflow-y: auto;
+        &::-webkit-scrollbar { width: 4px; }
+        &::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    }
+}
+
+.StudentDashboard-drawerOpen {
+    @include respond-to(md) {
+        right: 0 !important;
+    }
 }
 
 .StudentDashboard-logo {
@@ -2333,6 +2482,18 @@ body {
 .StudentDashboard-main {
     padding: 84px 28px 48px;
     overflow-x: hidden;
+
+    @include respond-to(lg) {
+        padding: 80px 20px 40px;
+    }
+
+    @include respond-to(md) {
+        padding: 20px 16px 48px;
+    }
+
+    @include respond-to(sm) {
+        padding: 16px 12px 40px;
+    }
 }
 
 .StudentDashboard-topbar {
@@ -2360,6 +2521,14 @@ body {
     grid-template-columns: repeat(4, 1fr);
     gap: 14px;
     margin-bottom: 24px;
+
+    @include respond-to(lg) {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    @include respond-to(xs) {
+        grid-template-columns: 1fr;
+    }
 }
 
 .StudentDashboard-statCard {
@@ -2397,6 +2566,11 @@ body {
     gap: 4px;
     margin-bottom: 20px;
     border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    white-space: nowrap;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
 }
 
 .StudentDashboard-tab {
@@ -2441,6 +2615,12 @@ body {
 
     &:hover {
         border-color: var(--color-28);
+    }
+
+    @include respond-to(sm) {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
     }
 }
 
@@ -2553,6 +2733,14 @@ body {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 16px;
+
+    @include respond-to(lg) {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    @include respond-to(sm) {
+        grid-template-columns: 1fr;
+    }
 }
 
 .StudentDashboard-achievement {
@@ -2835,6 +3023,68 @@ body {
     min-height: 100vh;
     direction: rtl;
     font-family: var(--font);
+
+    @include respond-to(md) {
+        grid-template-columns: 1fr;
+        padding-top: 64px;
+    }
+}
+
+.InstructorDashboard-mobileTopbar {
+    display: none;
+    @include respond-to(md) {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: fixed;
+        top: 0; right: 0; left: 0;
+        height: 64px;
+        background: var(--bg-surface);
+        border-bottom: 1px solid var(--border);
+        padding: 0 16px;
+        z-index: 1050;
+        direction: rtl;
+        font-family: var(--font);
+    }
+}
+
+.InstructorDashboard-menuBtn {
+    background: none; border: none;
+    font-size: 22px; color: var(--text-primary);
+    cursor: pointer; padding: 6px 10px;
+    border-radius: var(--radius-md);
+    transition: background .15s;
+    &:hover { background: var(--bg-card-hover); }
+}
+
+.InstructorDashboard-mobileTitle {
+    font-size: 16px; font-weight: 800; color: var(--text-primary);
+}
+
+.InstructorDashboard-mobileAvatar {
+    width: 36px !important; height: 36px !important; font-size: 13px !important;
+}
+
+.InstructorDashboard-overlay {
+    display: none;
+    @include respond-to(md) {
+        display: block; position: fixed; inset: 0;
+        background: rgba(0,0,0,0.55); z-index: 1100;
+        backdrop-filter: blur(2px);
+    }
+}
+
+.InstructorDashboard-closeDrawer {
+    display: none;
+    @include respond-to(md) {
+        display: flex; align-items: center; justify-content: center;
+        position: absolute; top: 14px; left: 14px;
+        width: 32px; height: 32px;
+        background: var(--bg-card-hover); border: 1px solid var(--border);
+        border-radius: 50%; font-size: 14px; color: var(--text-muted);
+        cursor: pointer; transition: all .15s;
+        &:hover { background: var(--border); color: var(--text-primary); }
+    }
 }
 
 .InstructorDashboard-sidebar {
@@ -2846,6 +3096,24 @@ body {
     position: sticky;
     top: 0;
     height: 100vh;
+    overflow-y: auto;
+
+    @include respond-to(md) {
+        position: fixed;
+        top: 0; right: -280px;
+        width: 280px; height: 100vh;
+        border-left: none;
+        border-right: 1px solid var(--border);
+        z-index: 1200;
+        transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 60px 16px 20px;
+        &::-webkit-scrollbar { width: 4px; }
+        &::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    }
+}
+
+.InstructorDashboard-drawerOpen {
+    @include respond-to(md) { right: 0 !important; }
 }
 
 .InstructorDashboard-logo {
@@ -2975,6 +3243,10 @@ body {
 
 .InstructorDashboard-main {
     padding: 24px 28px 48px;
+
+    @include respond-to(md) {
+        padding: 20px 16px 40px;
+    }
 }
 
 .InstructorDashboard-topbar {
@@ -3019,6 +3291,14 @@ body {
     grid-template-columns: repeat(4, 1fr);
     gap: 14px;
     margin-bottom: 24px;
+
+    @include respond-to(lg) {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    @include respond-to(xs) {
+        grid-template-columns: 1fr;
+    }
 }
 
 .InstructorDashboard-kpiCard {
@@ -3055,6 +3335,11 @@ body {
     gap: 4px;
     margin-bottom: 20px;
     border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    white-space: nowrap;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
 }
 
 .InstructorDashboard-tab {
@@ -3098,6 +3383,12 @@ body {
 
     &:hover {
         border-color: var(--color-28);
+    }
+
+    @include respond-to(sm) {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
     }
 }
 
@@ -3836,6 +4127,11 @@ body {
     gap: 10px;
     transition: border-color .2s;
 
+    @include respond-to(sm) {
+        padding: 4px 4px 4px 12px;
+        gap: 8px;
+    }
+
     &:focus-within {
         border-color: var(--primary);
     }
@@ -3927,6 +4223,16 @@ body {
     flex-wrap: wrap;
     padding-top: 40px;
     border-top: 1px solid var(--border);
+
+    @include respond-to(md) {
+        gap: 24px;
+    }
+
+    @include respond-to(sm) {
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+    }
 }
 
 .heroStat {
@@ -4243,6 +4549,14 @@ body {
     border-radius: var(--radius-xl);
     padding: 40px;
     text-align: center;
+
+    @include respond-to(md) {
+        padding: 32px 24px;
+    }
+
+    @include respond-to(sm) {
+        padding: 24px 16px;
+    }
 }
 
 .testimonialStars {
@@ -4734,7 +5048,7 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: 14px;
 
-    @media (max-width: 600px) {
+    @include respond-to(md) {
         grid-template-columns: 1fr;
     }
 }
@@ -4744,11 +5058,11 @@ body {
     grid-template-columns: 1fr 1fr 1fr;
     gap: 14px;
 
-    @media (max-width: 700px) {
+    @include respond-to(lg) {
         grid-template-columns: 1fr 1fr;
     }
 
-    @media (max-width: 480px) {
+    @include respond-to(xs) {
         grid-template-columns: 1fr;
     }
 }
@@ -4902,6 +5216,72 @@ body {
     background: var(--bg-page);
     font-family: var(--font);
     direction: rtl;
+
+    @include respond-to(md) {
+        grid-template-columns: 1fr;
+        padding-top: 64px;
+    }
+}
+
+.AdminDashboard-mobileTopbar {
+    display: none;
+    @include respond-to(md) {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: fixed;
+        top: 0; right: 0; left: 0;
+        height: 64px;
+        background: var(--bg-surface);
+        border-bottom: 1px solid var(--border);
+        padding: 0 16px;
+        z-index: 1050;
+        direction: rtl;
+        font-family: var(--font);
+    }
+}
+
+.AdminDashboard-menuBtn {
+    background: none; border: none;
+    font-size: 22px; color: var(--text-primary);
+    cursor: pointer; padding: 6px 10px;
+    border-radius: var(--radius-md);
+    transition: background .15s;
+    &:hover { background: var(--bg-card-hover); }
+}
+
+.AdminDashboard-mobileTitle {
+    font-size: 16px; font-weight: 800; color: var(--text-primary);
+}
+
+.AdminDashboard-mobileAvatar {
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    background: rgba(239,68,68,.15);
+    border-radius: 50%;
+}
+
+.AdminDashboard-overlay {
+    display: none;
+    @include respond-to(md) {
+        display: block; position: fixed; inset: 0;
+        background: rgba(0,0,0,0.55); z-index: 1100;
+        backdrop-filter: blur(2px);
+    }
+}
+
+.AdminDashboard-closeDrawer {
+    display: none;
+    @include respond-to(md) {
+        display: flex; align-items: center; justify-content: center;
+        position: absolute; top: 14px; left: 14px;
+        width: 32px; height: 32px;
+        background: var(--bg-card-hover); border: 1px solid var(--border);
+        border-radius: 50%; font-size: 14px; color: var(--text-muted);
+        cursor: pointer; transition: all .15s;
+        &:hover { background: var(--border); color: var(--text-primary); }
+    }
 }
 
 /* ── Sidebar ── */
@@ -4915,6 +5295,23 @@ body {
     top: 0;
     height: 100vh;
     overflow-y: auto;
+
+    @include respond-to(md) {
+        position: fixed;
+        top: 0; right: -280px;
+        width: 280px; height: 100vh;
+        border-left: none;
+        border-right: 1px solid var(--border);
+        z-index: 1200;
+        transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 60px 16px 20px;
+        &::-webkit-scrollbar { width: 4px; }
+        &::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    }
+}
+
+.AdminDashboard-drawerOpen {
+    @include respond-to(md) { right: 0 !important; }
 }
 
 /* ── Logo ── */
@@ -5026,6 +5423,10 @@ body {
     display: flex;
     flex-direction: column;
     gap: 20px;
+
+    @include respond-to(md) {
+        padding: 20px 16px 40px;
+    }
 }
 
 /* ── Top Bar ── */
@@ -5069,11 +5470,11 @@ body {
     grid-template-columns: repeat(4, 1fr);
     gap: 14px;
 
-    @media (max-width: 900px) {
+    @include respond-to(lg) {
         grid-template-columns: repeat(2, 1fr);
     }
 
-    @media (max-width: 500px) {
+    @include respond-to(xs) {
         grid-template-columns: 1fr;
     }
 }
@@ -6450,7 +6851,7 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: 24px;
 
-    @media (max-width: 700px) {
+    @include respond-to(md) {
         grid-template-columns: 1fr;
     }
 }
@@ -6837,10 +7238,13 @@ body {
     right: -100%;
     width: 100%;
     height: 100vh;
-    background: var(--bg-page);
+    background: rgba(10, 8, 30, 0.98);
+    backdrop-filter: blur(20px);
     z-index: 1100;
     transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     padding: 24px;
+    display: flex;
+    flex-direction: column;
 
     &.open {
         right: 0;
@@ -6871,8 +7275,10 @@ body {
 .NavBar-mobileLinks {
     display: flex;
     flex-direction: column;
-    gap: 24px;
-    margin-bottom: 40px;
+    gap: 16px;
+    margin-bottom: 32px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--border);
 }
 
 .NavBar-mobileLink {
@@ -7033,6 +7439,13 @@ body {
     flex: 1;
     overflow: hidden;
     height: calc(100vh - 56px);
+
+    @include respond-to(lg) {
+        grid-template-columns: 1fr;
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;
+    }
 }
 
 .CoursePlayer-sidebar {
@@ -7044,6 +7457,16 @@ body {
     width: 320px;
     min-width: 320px;
     transition: all .3s;
+
+    @include respond-to(lg) {
+        width: 100%;
+        min-width: 100%;
+        border-right: none;
+        border-top: 1px solid var(--border);
+        height: auto;
+        max-height: 500px;
+        overflow-y: auto;
+    }
 }
 
 .CoursePlayer-sidebarHidden {
@@ -8133,6 +8556,10 @@ body {
     padding: 100px 24px 70px;
     overflow: hidden;
     text-align: center;
+
+    @include respond-to(md) {
+        padding: 60px 16px 40px;
+    }
 }
 
 .InstructorsPage-heroBg {
@@ -8998,5 +9425,104 @@ body {
 
     .InstructorCourseCard-wrap:hover & {
         color: var(--primary);
+    }
+}
+
+/* ══ AboutPage ══ */
+.about-hero {
+    min-height: auto;
+    padding: 120px 0 80px;
+    @include respond-to(md) {
+        padding: 80px 0 60px;
+    }
+}
+
+.about-story-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 24px;
+    padding: 50px;
+    position: relative;
+    overflow: hidden;
+
+    @include respond-to(md) {
+        padding: 30px 20px;
+    }
+
+    .glow-dot {
+        position: absolute;
+        top: -20px;
+        right: -20px;
+        width: 150px;
+        height: 150px;
+        background: var(--primary);
+        filter: blur(100px);
+        opacity: 0.1;
+    }
+}
+
+.about-mission-vision {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+
+    @include respond-to(sm) {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+}
+
+.about-info-card {
+    border-radius: 20px;
+    padding: 40px;
+    transition: transform 0.3s ease;
+
+    @include respond-to(md) {
+        padding: 30px 20px;
+    }
+
+    &.mission {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+
+    &.vision {
+        background: linear-gradient(135deg, rgba(236, 72, 153, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%);
+        border: 1px solid rgba(236, 72, 153, 0.2);
+    }
+}
+
+.about-features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+
+    @include respond-to(sm) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.about-feature-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 20px;
+    padding: 30px;
+    transition: transform 0.3s ease;
+    cursor: default;
+
+    &:hover {
+        transform: translateY(-10px);
+    }
+
+    .feature-icon-box {
+        font-size: 2.5rem;
+        margin-bottom: 20px;
+        width: 70px;
+        height: 70px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 }
