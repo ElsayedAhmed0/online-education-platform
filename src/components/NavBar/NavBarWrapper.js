@@ -2,7 +2,7 @@
 import { usePathname } from "next/navigation";
 import NavBar from "./NavBar";
 
-const HIDE_NAV = ["/login", "/register", "/learn", "/instructor", "/admin"];
+const HIDE_NAV = ["/login", "/register", "/learn", "/instructor", "/admin", "/dashboard"];
 
 export default function NavBarWrapper() {
     const pathname = usePathname();
