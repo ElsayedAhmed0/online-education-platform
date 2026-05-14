@@ -141,7 +141,7 @@ export default function RegisterPage() {
             {loading ? "جاري إنشاء الحساب..." : `إنشاء حساب ${role === "instructor" ? "مدرس" : "طالب"}`}
           </button>
 
-          <div style={{ textAlign: "center", marginTop: 16, fontSize: 13, color: "rgba(255,255,255,.45)" }}>
+          <div style={{ textAlign: "center", marginTop: 16, fontSize: 13, color: "rgba(0, 0, 0, 0.45)" }}>
             عندك حساب؟{" "}
             <Link href="/login" style={{ color: "#818CF8", fontWeight: 700, textDecoration: "none" }}>
               سجّل دخولك

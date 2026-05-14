@@ -90,7 +90,7 @@ export default function LoginPage() {
                         {loading ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
                     </button>
 
-                    <div style={{ textAlign: "center", marginTop: "16px", fontSize: "13px", color: "rgba(255,255,255,.45)" }}>
+                    <div style={{ textAlign: "center", marginTop: "16px", fontSize: "13px", color: "rgba(0, 0, 0, 0.45)" }}>
                         مش عندك حساب؟{" "}
                         <Link href="/register" style={{ color: "#818CF8", fontWeight: 700, textDecoration: "none" }}>
                             إنشاء حساب جديد
