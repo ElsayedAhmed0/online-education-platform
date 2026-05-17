@@ -6508,7 +6508,7 @@ body {
     transition: background .3s, box-shadow .3s;
 
     &.NavBar-scrolled {
-        background: rgba(10, 8, 30, 0.97);
+        background: #efefefd9;
         box-shadow: 0 4px 24px rgba(0, 0, 0, .4);
     }
 }
@@ -7292,7 +7292,7 @@ body {
 
     &.NavBar-scrolled {
         height: 64px;
-        background: rgba(10, 8, 30, 0.85);
+        background: #efefefd9;
         backdrop-filter: blur(12px);
         border-bottom: 1px solid var(--border);
     }
